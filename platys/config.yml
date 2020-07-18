@@ -38,6 +38,7 @@
       #kafka connect
       KAFKA_CONNECT_enable: true
       KAFKA_CONNECT_nodes: 2
+      KAFKA_CONNECT_connectors: 'jcustenborder/kafka-connect-twitter:0.3.33'
 
       #ksqldb
       KAFKA_KSQLDB_enable: true
