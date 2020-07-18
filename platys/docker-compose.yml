@@ -184,7 +184,7 @@ services:
       - -c
       - |
         echo "Installing Connectors"
-        for i in $$(echo "None" | sed "s/,/ /g")
+        for i in $$(echo "jcustenborder/kafka-connect-twitter:0.3.33" | sed "s/,/ /g")
         do
           confluent-hub install --no-prompt --component-dir /etc/kafka-connect/addl-plugins --verbose "$$i"
         done
@@ -592,7 +592,7 @@ services:
     restart: unless-stopped
   #  ================================== Presto ========================================== #}
   presto-1:
-    image: prestosql/presto:latest
+    image: starburstdata/presto:latest
     hostname: presto-1
     container_name: presto-1
     labels:
@@ -600,7 +600,6 @@ services:
       com.mdps.service.webui.url: http://${PUBLIC_IP}:28081
     ports:
       - 28081:8080
-    volumes:
     volumes:
       - ./conf/presto/minio.properties:/usr/lib/presto/default/etc/catalog/minio.properties
       - ./conf/presto/kafka.properties:/usr/lib/presto/default/etc/catalog/kafka.properties
@@ -621,8 +620,7 @@ services:
       - 45678:45678
     volumes:
       - ./data-transfer:/data-transfer
-      - ./plugins/dremio/apache-kafka-handler/kafka-handler-3.1.3000.7.1.0.0-714.jar:/opt/dremio/plugins/connectors/hive3.d/kafka-handler-3.1.3000.7.1.0.0-714.jar
-      - ./plugins/dremio/apache-kafka-handler/kafka-handler-3.1.3000.7.1.0.0-714.jar:/opt/dremio/plugins/connectors/hive2.d/kafka-handler-3.1.3000.7.1.0.0-714.jar
+    restart: unless-stopped
   #  ================================== Presto ========================================== #}
   drill-1:
     image: smizy/apache-drill:latest
