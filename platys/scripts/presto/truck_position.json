@@ -1,0 +1,56 @@
+{
+    "tableName": "truck_position",
+    "schemaName": "logistics",
+    "topicName": "truck_position",
+    "key": {
+        "dataFormat": "raw",
+        "fields": [
+            {
+                "name": "kafka_key",
+                "dataFormat": "BYTE",
+                "type": "VARCHAR",
+                "hidden": "false"
+            }        
+	]
+    },
+    "message": {
+        "dataFormat": "json",
+        "fields": [
+            {
+                "name": "timestamp",
+                "mapping": "timestamp",
+                "type": "BIGINT"
+            },
+            {
+                "name": "truck_id",
+                "mapping": "truckId",
+                "type": "BIGINT"
+            },
+            {
+                "name": "driver_id",
+                "mapping": "driverID",
+                "type": "BIGINT"
+            },
+            {
+                "name": "route_id",
+                "mapping": "routeId",
+                "type": "BIGINT"
+            },
+            {
+                "name": "event_type",
+                "mapping": "eventType",
+                "type": "VARCHAR"
+            },
+            {
+                "name": "latitude",
+                "mapping": "latitude",
+                "type": "DOUBLE"
+            },
+            {
+                "name": "longitude",
+                "mapping": "longitude",
+                "type": "DOUBLE"
+            }       
+	]
+    }
+}
