@@ -4,7 +4,6 @@
 version: '3.0'
 # enforce some dependencies
 # enforce some dependencies
-# enforce some dependencies
 services:
   #  ================================== Zookeeper ========================================== #}
   zookeeper-1:
@@ -271,26 +270,6 @@ services:
       - ./data-transfer:/data-transfer
     entrypoint: /bin/sh
     tty: true
-  #  ================================== Confluent REST Proxy ========================================== #}
-  kafka-rest-1:
-    image: confluentinc/cp-kafka-rest:5.5.0
-    container_name: kafka-rest-1
-    hostname: kafka-rest-1
-    labels:
-      com.mdps.service.restapi.url: http://${PUBLIC_IP}:18086
-    depends_on:
-      - kafka-1
-      - schema-registry-1
-    ports:
-      - 18086:8086
-    environment:
-      KAFKA_REST_BOOTSTRAP_SERVERS: PLAINTEXT://kafka-1:19092
-      KAFKA_REST_LISTENERS: http://0.0.0.0:8086
-      KAFKA_REST_SCHEMA_REGISTRY_URL: http://schema-registry-1:8081
-      KAFKA_REST_HOST_NAME: kafka-rest-1
-    volumes:
-      - ./data-transfer:/data-transfer
-    restart: unless-stopped
   #  ================================== Schema Registry UI ========================================== #}
   schema-registry-ui:
     image: landoop/schema-registry-ui:latest
@@ -308,21 +287,19 @@ services:
     volumes:
       - ./data-transfer:/data-transfer
     restart: unless-stopped
-  #  ================================== Kafka Topics UI ========================================== #}
-  kafka-topics-ui:
-    image: landoop/kafka-topics-ui:latest
-    container_name: kafka-topics-ui
-    hostname: kafka-topics-ui
+  #  ================================== Kafka Connect UI ========================================== #}
+  kafka-connect-ui:
+    image: landoop/kafka-connect-ui:latest
+    container_name: kafka-connect-ui
+    hostname: kafka-connect-ui
     labels:
-      com.mdps.service.webui.url: http://${PUBLIC_IP}:28141
+      com.mdps.service.webui.url: http://${PUBLIC_IP}:28103
     depends_on:
-      - kafka-1
-      - kafka-rest-1
+      - kafka-connect-1
     ports:
-      - 28141:8000
+      - 28103:8000
     environment:
-      KAFKA_REST_PROXY_URL: http://kafka-rest-1:8086
-      LAZY_LOAD_TOPIC_META: 'false'
+      CONNECT_URL: http://${PUBLIC_IP}:8083/,http://${PUBLIC_IP}:8084/
       PROXY: 'true'
     volumes:
       - ./data-transfer:/data-transfer
