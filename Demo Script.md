@@ -103,7 +103,7 @@ kafkacat -b localhost -t truck_position
 ## Demo
 
  * [Demo 1](#markdown-header-demo-1-streaming-data-lake)
- * [Presto](#markdown-header-demo-2-presto)
+ * [Presto](-3#demo-2---presto)
 
 
 ## Demo 1 - Streaming Data Lake
