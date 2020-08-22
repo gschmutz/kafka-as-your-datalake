@@ -102,28 +102,34 @@ kafkacat -b localhost -t truck_position
 
 ## Demo
 
- * [Demo 1](#demo-1---streaming-data-lake)
- * [Presto](#demo-2---presto)
+ * [Demo 1 - Streaming Data Lake](#demo-1---streaming-data-lake)
+ * [Demo 2 - Batch Processing with Spark](#demo-2---batch-processing-with-spark)
+ * [Demo 3 - Batch Query with Presto](#demo-3---batch-query-with-presto)
 
 ## Demo 1 - Streaming Data Lake
 
-### Connect to KSQL engine
+This demo will show how stream processing can be used to transform raw data (events) into usage-optimised data, ready to be consumed. We will use [ksqlDB](http://ksqldb.io) as the stream processing framework, but any other would work as well.
+
+### Connect to ksqlDB engine
+
+Let's connect to the ksqlDB shell
 
 ```
 docker exec -it ksqldb-cli ksql http://ksqldb-server-1:8088
 ```
 
-### Create Stream and SELECT from it
+#### Create Stream and SELECT from it
+
+First drop the stream if it already exists:
 
 ```
-DROP STREAM truck_position_raw_s;
+DROP STREAM IF EXISTS truck_position_raw_s;
 ```
 
-
-if JSON
+Now let's create the ksqlDB Stream
 
 ```
-CREATE STREAM truck_position_raw_s 
+CREATE STREAM IF NOT EXISTS truck_position_raw_s 
   (timestamp VARCHAR, 
    truckId VARCHAR, 
    driverId BIGINT, 
@@ -136,16 +142,25 @@ CREATE STREAM truck_position_raw_s
         value_format='JSON');
 ```
 
+Let's see the live data by using a `SELECT` on the Stream with the `EMIT CHANGES` clause:
 
 ```
 SELECT * FROM truck_position_raw_s 
 EMIT CHANGES;
 ```
 
-```
-DROP STREAM truck_position_refined_s;
+#### Create a new "refined" stream where the data is transformed into Avro
 
-CREATE STREAM truck_position_refined_s 
+First drop the stream if it already exists:
+
+```
+DROP STREAM IF EXISTS truck_position_refined_s;
+```
+
+And now crate the refined ksqlDB Stream:
+
+```
+CREATE STREAM IF NOT EXISTS truck_position_refined_s 
   WITH (kafka_topic='truck_position_refined',
         value_format='AVRO')
 AS SELECT *
@@ -153,18 +168,52 @@ FROM truck_position_raw_s
 EMIT CHANGES;
 ```
 
+to check that the refined topic does in fact hold avro formatted data, let's just do a normal kafkacat on the `truck_position_refined` topic
+
+```
+docker exec -ti kafkacat kafkacat -b kafka-1 -t truck_position_refined
+```
+
+we can see that it is avro 
+
+```
+                            Normal���Q�B@ףp=
+WX�$343671958179690963
+1598125263176886����
+                             Normal��Q��C@�p=
+דW�$343671958179690963
+% Reached end of topic truck_position_refined [0] at offset 367
+159812526333671�ߩ�2Unsafe following distance�Q���B@���(\?W�$343671958179690963
+% Reached end of topic truck_position_refined [5] at offset 353
+% Reached end of topic truck_position_refined [2] at offset 324
+1598125263526101����
+                              Normal=
+ףpE@R����V�$343671958179690963
+% Reached end of topic truck_position_refined [7] at offset 355
+```
+
+we can use the `-s` and `-r` option to specify the Avro Serde and the URL of the schema registry
+
+```
+docker exec -ti kafkacat kafkacat -b kafka-1 -t truck_position_refined -s avro -r http://schema-registry-1:8081
+```
+
+#### Create a new "usage-optimized" stream with the data filered
+
+In this new stream we are only interested in the messages where the `eventType` is not normal. First let's create a SELECT statement which performs the right result, using the ksqlDB CLI:
+
 ```
 SELECT * FROM truck_position_refined_s 
 WHERE eventType != 'Normal'
 EMIT CHANGES;
 ```
 
-### Create Stream and SELECT from it
+Now let's create a new stream with that information. 
 
 ```
-DROP STREAM problematic_driving_s;
+DROP STREAM IF EXISTS problematic_driving_s;
 
-CREATE STREAM problematic_driving_s \
+CREATE STREAM IF NOT EXISTS problematic_driving_s \
   WITH (kafka_topic='problematic_driving', \
         value_format='AVRO', \
         partitions=8) \
@@ -174,17 +223,23 @@ FROM truck_position_refined_s \
 WHERE eventtype != 'Normal';
 ```
 
+We can see that the stream now only contains the messages filtered down to the relevant ones:
+
 ```
 SELECT * FROM problematic_driving_s
 EMIT CHANGES;
 ```
 
+We can also see the same information by directly getting the data from the underlaying kafka topic `dangerous_driving_ksql`:
+
 ```
-kafkacat -b localhost -t dangerous_driving_ksql
+docker exec -ti kafkacat kafkacat -b kafka-1 -t dangerous_driving_ksql
 ```
 
+## Demo 2 - Batch Processing with Spark
 
-## Demo 2 - Presto
+
+## Demo 3 - Batch Query with Presto
 
 ```
   presto-1:
@@ -633,8 +688,7 @@ LEFT JOIN driver_t \
 ON CAST (dangerous_driving_s.driverId AS VARCHAR) = driver_t.ROWKEY;
 ```
 
-
-
+# Twitter Example
 
 ## Create Twitter Source
 
