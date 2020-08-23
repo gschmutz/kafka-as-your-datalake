@@ -166,6 +166,8 @@ kafkacat -b localhost -t truck_position
 
 This demo will show how stream processing can be used to transform raw data (events) into usage-optimised data, ready to be consumed. We will use [ksqlDB](http://ksqldb.io) as the stream processing framework, but any other would work as well.
 
+![Alt Image Text](./images/demo-1-ksqldb.png "Demo 1 - KsqlDB")
+
 ### Connect to ksqlDB engine
 
 Let's connect to the ksqlDB shell
@@ -296,10 +298,13 @@ docker exec -ti kafkacat kafkacat -b kafka-1 -t problematic_driving -s avro -r h
 
 In this demo we will see how Spark can be used to access the Kafka topic from a Batch process.
 
+![Alt Image Text](./images/demo-2-spark.png "Demo 2 - Spark")
 
 ## Demo 3 - Batch Query with Presto
 
 In this demo we will show how Presto can be used to query a Kafka topic in a "batch" manner. By that you basically treat Kafka as a "table" and can perform queries on all the data stored in the topic. 
+
+![Alt Image Text](./images/demo-3-presto.png "Demo 3 - Presto")
 
 ### Configure the Kafka connector
 
