@@ -18,7 +18,7 @@ In order to not change the `docker-compose.yml` (it is generated) directly, we c
 
 Add the following lines to `docker-compose.override.yml`:
 
-```
+``` yaml
 version: '3.0'
 services:
   presto-1:
@@ -31,7 +31,7 @@ services:
 
 if using Presto DB, it would be
 
-```
+``` yaml
 version: '3.0'
 services:
   presto-1:
@@ -43,7 +43,7 @@ services:
 
 Create the `kafka.properties` in folder `./conf/presto/catalog`. We can see that we register `truck_position` as a table and assign it to the `logistics` schema. 
 
-```
+``` properties
 kafka.nodes=kafka-1:19092
 kafka.table-names=truck_position
 kafka.default-schema=logistics
@@ -53,7 +53,7 @@ kafka.table-description-dir=/usr/lib/presto/default/etc/kafka
 
 Restart the `presto-1` service so that the configuration changes are picked up by Presto.
 
-```
+``` bash
 docker restart presto-1
 ```
 
@@ -61,13 +61,13 @@ docker restart presto-1
 
 Next let's query the data from Presto. Connect to the Presto CLI using
 
-```
+``` bash
 docker exec -ti presto-cli presto --server presto-1:8080 --catalog kafka --schema logistics
 ```
 
 on the `presto:logistics>` prompt use the `show tables` command to display the registered tables:
 
-```
+``` sql
 show tables;
 ```
 
@@ -84,7 +84,7 @@ presto:logistics> show tables
 
 Now we can use the `SELECT` statement on the table to return the data:
 
-```
+``` sql
 SELECT * FROM truck_position;
 ```
 
@@ -109,7 +109,7 @@ presto:logistics> SELECT * FROM truck_position;
 
 One way to split the value of the `_message` column up is by using the `json_extract` Presto SQL function:
 
-```
+``` sql
 SELECT json_extract(_message, '$.truckId') as truck_id
 	, json_extract(_message, '$.driverId') as driver_id
 	, json_extract(_message, '$.eventType') as event_type 
@@ -127,7 +127,7 @@ But there is another way to do the mapping in a more static fashion.
 
 We can create a table definition file, which consists of a JSON definition for a table. Create a file `truck_position.json` in the folder `./scripts/presto/` and add the following content:
 
-```
+``` json
 {
     "tableName": "truck_position",
     "schemaName": "logistics",
@@ -199,7 +199,7 @@ Recreate the `presto-1` container using `docker-compose up -d`.
 
 Now we can use the `SELECT` statement to prove that the mapping is working. From the Presto command line, execute:
 
-```
+``` sql
 SELECT * FROM truck_position;
 ```
 
@@ -222,7 +222,7 @@ presto:logistics> SELECT * FROM truck_position;
 
 We can also do a describe of the table to see the definition
 
-```
+``` sql
 DESCRIBE truck_position;
 ```
 
@@ -254,7 +254,7 @@ presto:logistics> describe truck_position;
 
 We can restrict on any column, for example on `event_type`.
 
-```
+``` sql
 SELECT * FROM truck_position
 WHERE event_type != 'Normal';
 ```
@@ -282,7 +282,7 @@ It will of course do a full topic scan, as there are no indexes on Kafka (except
  
 Knowing that we can also do more complex analytics using all the capabilities of the SQL language built into Presto and available to the Kafka connector as well. 
 
-```
+``` sql
 SELECT driver_id, event_type, count(*) as nof
 FROM truck_position
 WHERE event_type != 'Normal'
@@ -325,16 +325,19 @@ In such a query it would be interesting to know the name of the driver. But this
 
 ### Joining with Driver table in Postgresql
 
-Presto allows to work with multiple data sources in one single statement. 
-
+Presto allows to work with multiple data sources in one single statement. Let's again connect with the Presto CLI to `presto-1`
 
 ```
 docker exec -ti presto-cli presto --server presto-1:8080 --catalog kafka --schema logistics
 ```
 
-```
+and use the following SQL statement to access the `driver` table in the `logistics_db` schema over the Presto `postgresql` connector.
+
+``` sql
 SELECT * FROM postgresql.logistics_db.driver;
 ```
+
+we can see the data retrieved from the Postgresql table:
 
 ```
  id | first_name | last_name  | available | birthdate  |       last_update
@@ -353,7 +356,18 @@ SELECT * FROM postgresql.logistics_db.driver;
 (11 rows)
 ```
 
+This works, because there is a `postgresql.properties` file, which defines the Postgresql connector:
+
+``` properties
+connector.name=postgresql
+connection-url=jdbc:postgresql://postgresql:5432/demodb
+connection-user=demo
+connection-password=abc123!
 ```
+
+
+
+``` sql
 SELECT tp.driver_id, d.first_name, d.last_name, tp.event_type, count(*) as nof
 FROM truck_position		AS tp
 LEFT JOIN postgresql.logistics_db.driver   AS d
@@ -380,7 +394,7 @@ GROUP BY tp.driver_id, d.first_name, d.last_name, tp.event_type;
         28 | NULL       | NULL       | Unsafe following distance |   6
 ```
 
-```
+``` sql
 SELECT driver_id, first_name, last_name, event_type, nof
 FROM (SELECT driver_id, event_type, count(*) AS nof
 		FROM truck_position
@@ -395,7 +409,7 @@ ON tp.driver_id = d.id
 
 Add the `logisticsdb_driver` topic to the property `kafka.table-names` in the `kafka.properties` file, so that it will be available in Presto as a table.
 
-```
+``` properties
 kafka.nodes=kafka-1:19092
 kafka.table-names=truck_position,logisticsdb_driver
 kafka.default-schema=logistics
@@ -407,19 +421,19 @@ Now restart the `presto-1` container using `docker restart presto-1`.
 
 Connect to the Presto CLI
 
-```
+``` bash
 docker exec -ti presto-cli presto --server presto-1:8080 --catalog kafka --schema logistics
 ```
 
 and show the tables available
 
-```
+``` sql
 show tables
 ```
 
 If we describe the `logisticsdb_driver` table 
 
-```
+``` sql
 DESCRIBE logisticsdb_driver;
 ```
 
@@ -442,7 +456,7 @@ we can see that the whole raw message is available as `_message`:
 
 Let's see the content
 
-```
+``` sql
 SELECT _message FROM logisticsdb_driver;
 ```
 
@@ -470,7 +484,7 @@ We could again use the `json_extract` function to split the properties into sepa
 Here is the table definition file for mapping the data of the `logisticsdb_driver` topic to individual columns. Create a new file `logisticsdb_driver.json` in the folder `./scripts/presto/`
 
 
-```
+``` json
 {
     "tableName": "logisticsdb_driver",
     "schemaName": "logistics",
@@ -557,7 +571,7 @@ If you now do a describe on the table, you should see the effects of the mapping
 
 We can now use the same SELECT statement as before, but replace the Postgresql `postgresql.logistics_db.driver ` table by the Kafka table:
 
-```
+``` sql
 SELECT driver_id, first_name, last_name, event_type, nof
 FROM (SELECT driver_id, event_type, count(*) AS nof
 		FROM truck_position
@@ -574,7 +588,7 @@ We will get the same result as before, but no longer being dependent on two data
 
 Let's see what happens if we do an update on one of the drivers in the Postgresql table. But first let's see the current state of driver with ID `21`:
 
-```
+``` sql
 SELECT * 
 FROM logisticsdb_driver
 WHERE id = 21; 
@@ -602,17 +616,22 @@ docker@ubuntu:~$ docker exec -ti kafkacat kafkacat -b kafka-1 -t logisticsdb_dri
 {"id":21,"first_name":"Lila","last_name":"Page","available":"Y","birthdate":2651,"last_update":1598191309466}
 ```
 
-In another terminal window (leave the kafkacat running as is), connect to Postgresql and perform the update of driver `21` and set `available` to `N`:
+In another terminal window (leave the kafkacat running as is), connect to Postgresql 
 
-```
+``` bash
 docker exec -ti postgresql psql -d demodb -U demo
+```
+
+and perform the update of driver `21` and set `available` to `N`:
+
+``` sql
 SET search_path TO logistics_db;
 UPDATE "driver" SET "available" = 'N', "last_update" = CURRENT_TIMESTAMP  WHERE "id" = 21;
 ```
 
 in the kafkacat window you will now see a 2nd message for driver `21`:
 
-```
+``` bash
 docker@ubuntu:~$ docker exec -ti kafkacat kafkacat -b kafka-1 -t logisticsdb_driver | grep ":21"
 {"id":21,"first_name":"Lila","last_name":"Page","available":"Y","birthdate":2651,"last_update":1598191309466}
 {"id":21,"first_name":"Lila","last_name":"Page","available":"N","birthdate":2651,"last_update":1598191373828}
@@ -636,7 +655,7 @@ We can see that we also get two records back. This is a bit "unexpected", if we 
 
 If we re-run the join to `truck_position` for only driver `21`
 
-```
+``` sql
 SELECT driver_id, first_name, last_name, event_type, nof
 FROM (SELECT driver_id, event_type, count(*) AS nof
 		FROM truck_position
@@ -666,7 +685,7 @@ we can see that this cause duplicates, due to the two rows returned for the `log
 How can we avoid that? We have simulate the behaviour of log compaction in Presto, i.e. we should only return the newest message for each `kafka_key`. 
 Presto supports many SQL functions, such as LAG and LEAD as well as LAST_VALUE. Using LAST_VALUE we return the newest `last_update` value for each key and these records we return.
 
-```
+``` sql
 SELECT * 
 FROM logisticsdb_driver 
 WHERE (last_update) IN (SELECT LAST_VALUE(last_update) OVER (PARTITION BY kafka_key 
@@ -677,7 +696,7 @@ WHERE (last_update) IN (SELECT LAST_VALUE(last_update) OVER (PARTITION BY kafka_
 
 This removes the older values and we can replace the join to the `logisticsdb_driver` table by this query:
 
-```
+``` sql
 SELECT driver_id, first_name, last_name, event_type, nof
 FROM (SELECT driver_id, event_type, count(*) AS nof
 		FROM truck_position
@@ -696,190 +715,4 @@ ON tp.driver_id = d.id
 
 Unfortunately the Kafka connector does not support views, otherwise some views could be used to simplify these statements.
 
-## Demo 3 - Drill
 
-
-## Demo 4 - Hive
-
-```
-docker exec -ti hive-metastore hive
-```
-
-```
-CREATE EXTERNAL TABLE truck_position
-  (`timestamp` bigint , `eventType` string,  `latitude` double, 
-  longitude double)
-  ROW FORMAT SERDE 
-  'org.apache.hadoop.hive.kafka.KafkaSerDe'
-  STORED BY 'org.apache.hadoop.hive.kafka.KafkaStorageHandler'
-  TBLPROPERTIES
-  ("kafka.topic" = "truck_position", 
-  "kafka.bootstrap.servers"="kafka-1:19092",
-  "oracle.kafka.table.key.type"="string"
-  );
-```
-
-does not work (tried to use in Presto):
-
-```
-CREATE EXTERNAL TABLE truck_position
-  (`timestamp` bigint , `eventType` string,  `latitude` double, 
-  longitude double)
-  ROW FORMAT SERDE 
-  'org.apache.hadoop.hive.kafka.KafkaSerDe'
-  STORED AS INPUTFORMAT 'org.apache.hadoop.hive.kafka.KafkaInputFormat'
-       OUTPUTFORMAT 'org.apache.hadoop.hive.kafka.KafkaOutputFormat'
-  TBLPROPERTIES
-  ("kafka.topic" = "truck_position", 
-  "kafka.bootstrap.servers"="kafka-1:19092",
-  "oracle.kafka.table.key.type"="string"
-  );
-```
-
-
-Next let's query the data from Presto. Connect to the Presto CLI using
-
-```
-presto --server localhost:28081 --catalog kafka-hive --schema default
-```
-
-------
-
-## Demo 3 - Enrich Data
-
-### Show driver table
-
-```
-docker exec -ti postgresql psql -d sample -U sample
-
-
-SELECT * FROM driver;
-```
-
-
-```
-UPDATE "driver" SET "available" = 'N', "last_update" = CURRENT_TIMESTAMP  WHERE "id" = 21;
-UPDATE "driver" SET "available" = 'N', "last_update" = CURRENT_TIMESTAMP  WHERE "id" = 14;
-```
-
-check with kafkacat
-
-```
-kafkacat -b localhost -t truck_driver -o beginning
-```
-
-### Create Join in KSQL
-
-```
-set 'commit.interval.ms'='5000';
-set 'cache.max.bytes.buffering'='10000000';
-set 'auto.offset.reset'='earliest';
-
-DROP TABLE driver_t;
-
-CREATE TABLE driver_t (rowkey VARCHAR PRIMARY KEY,
-   id BIGINT,
-   first_name VARCHAR,  
-   last_name VARCHAR,  
-   available VARCHAR, 
-   birthdate VARCHAR)  
-  WITH (kafka_topic='truck_driver', 
-        value_format='JSON');
-```
-
-```
-SELECT driverid, first_name, last_name, truckId, routeId ,eventType \
-FROM dangerous_driving_s \
-LEFT JOIN driver_t \
-ON CAST (dangerous_driving_s.driverId AS VARCHAR) = driver_t.ROWKEY
-EMIT CHANGES;
-```
-
-Add missing data
-
-```
-docker exec -ti postgresql psql -d sample -U sample
-```
-
-```
-INSERT INTO "driver" ("id", "first_name", "last_name", "available", "birthdate", "last_update") VALUES (21,'Lila', 'Page', 'Y', '5-APR-77', CURRENT_TIMESTAMP);
-INSERT INTO "driver" ("id", "first_name", "last_name", "available", "birthdate", "last_update") VALUES (22,'Patricia', 'Coleman', 'Y', '11-AUG-80' ,CURRENT_TIMESTAMP);
-INSERT INTO "driver" ("id", "first_name", "last_name", "available", "birthdate", "last_update") VALUES (23,'Jeremy', 'Olson', 'Y', '13-JUN-82', CURRENT_TIMESTAMP);
-INSERT INTO "driver" ("id", "first_name", "last_name", "available", "birthdate", "last_update") VALUES (24,'Walter', 'Ward', 'Y', '24-JUL-85', CURRENT_TIMESTAMP);
-INSERT INTO "driver" ("id", "first_name", "last_name", "available", "birthdate", "last_update") VALUES (25,'Kristen', ' Patterson', 'Y', '14-JUN-73', CURRENT_TIMESTAMP);
-INSERT INTO "driver" ("id", "first_name", "last_name", "available", "birthdate", "last_update") VALUES (26,'Jacquelyn', 'Fletcher', 'Y', '24-AUG-85', CURRENT_TIMESTAMP);
-INSERT INTO "driver" ("id", "first_name", "last_name", "available", "birthdate", "last_update") VALUES (27,'Walter', '  Leonard', 'Y', '12-SEP-88', CURRENT_TIMESTAMP);
-INSERT INTO "driver" ("id", "first_name", "last_name", "available", "birthdate", "last_update") VALUES (28,'Della', ' Mcdonald', 'Y', '24-JUL-79', CURRENT_TIMESTAMP);
-INSERT INTO "driver" ("id", "first_name", "last_name", "available", "birthdate", "last_update") VALUES (29,'Leah', 'Sutton', 'Y', '12-JUL-75', CURRENT_TIMESTAMP);
-INSERT INTO "driver" ("id", "first_name", "last_name", "available", "birthdate", "last_update") VALUES (30,'Larry', 'Jensen', 'Y', '14-AUG-83', CURRENT_TIMESTAMP);
-INSERT INTO "driver" ("id", "first_name", "last_name", "available", "birthdate", "last_update") VALUES (31,'Rosemarie', 'Ruiz', 'Y', '22-SEP-80', CURRENT_TIMESTAMP);
-INSERT INTO "driver" ("id", "first_name", "last_name", "available", "birthdate", "last_update") VALUES (32,'Shaun', ' Marshall', 'Y', '22-JAN-85', CURRENT_TIMESTAMP);
-```
-
-
-```
-DROP STREAM dangerous_driving_and_driver_s;
-
-CREATE STREAM dangerous_driving_and_driver_s \
-  WITH (kafka_topic='dangerous_driving_and_driver_ksql', \
-        value_format='JSON', \
-        partitions=8) \
-AS 
-SELECT driverid, first_name, last_name, truckId, routeId ,eventType \
-FROM dangerous_driving_s \
-LEFT JOIN driver_t \
-ON CAST (dangerous_driving_s.driverId AS VARCHAR) = driver_t.ROWKEY;
-```
-
-# Twitter Example
-
-## Create Twitter Source
-
-```
-docker exec -ti kafka-1 kafka-topics --create --zookeeper zookeeper-1:2181 --topic tweet-raw-v1 --replication-factor 3 --partitions 8
-```
-
-
-User Ids to follow: 82564066,18898576,9462812,126226388,2342011352,1287555762,2827342884,24692013, 24692013, 1562518867, 1185290384634601472, 880123724694822913,925124076666007558,2496849162, 1086342103876161536, 904997437,3315687506
-
-Robin Moffatt: 82564066
-Guido Schmutz: 18898576
-Jay Kreps: 126226388
-Apache Kafka: 1287555762
-Gunnar Morling: 2342011352
-Gwen Shapira: 9462812
-Kai Waehner: 207673942
-Tim Berglund: 14211984
-Ricardo Ferreira: 1287555762
-Confluent Inc: 2827342884
-Victor Gamov: 24692013
-Databricks: 1562518867
-ksqlDB: 1185290384634601472
-Kafka Streams: 880123724694822913
-Starbrustdata: 925124076666007558
-Prestodb: 2496849162
-Prestosql: 1086342103876161536
-Apache Drill: 904997437
-Dremio: 3315687506
-
-
-```
-connector.class=com.github.jcustenborder.kafka.connect.twitter.TwitterSourceConnector
-process.deletes=false
-### filter.keywords=#kafka,#ksqldb,#ksql,#eventsorucing,#streamprocessing,#datalake,#datahub,#streamanalytics
-filter.userids=82564066,18898576,9462812,126226388,2342011352,1287555762,2827342884,24692013, 24692013, 1562518867, 1185290384634601472, 880123724694822913,925124076666007558,2496849162, 1086342103876161536, 904997437,3315687506 
-kafka.status.topic=tweet-raw-v1
-tasks.max=1
-twitter.oauth.consumerKey=2cUwkAhSQnFMGFU0pB2OcNQZV
-twitter.oauth.consumerSecret=wi1DmS07hQfPvJH0eU7kC8oOOzUN8RLuRLVLpxNaZpPBfehXSY
-twitter.oauth.accessToken=18898576-nym8SGZkCMQmoZJxJuNyfk87JBi5tfmN8D7ZVKQhb
-twitter.oauth.accessTokenSecret=18898576-nym8SGZkCMQmoZJxJuNyfk87JBi5tfmN8D7ZVKQhb
-
-
-# do not use transform currently
-transforms.createKey.type=org.apache.kafka.connect.transforms.ValueToKey
-transforms=createKey,extractInt
-transforms.extractInt.type=org.apache.kafka.connect.transforms.ExtractField$Key
-transforms.extractInt.field=Id
-transforms.createKey.fields=Id
-```
