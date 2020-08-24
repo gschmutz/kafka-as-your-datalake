@@ -1,6 +1,6 @@
 # Kafka as your Data Lake - is it feasible?
 
-This project describes the setup and execution of the demo for the Kafka Summit 2020 presenation "Kafka as your Data Lake - is it feasible?". 
+This project describes the setup and execution of the demo for the Kafka Summit 2020 presenation [Kafka as your Data Lake - is it feasible?](tbd). 
 
 ![Alt Image Text](./images/kafka-as-your-datalake.png "Kafka as your Data Lake")
 
