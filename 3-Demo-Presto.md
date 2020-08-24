@@ -327,7 +327,7 @@ In such a query it would be interesting to know the name of the driver. But this
 
 Presto allows to work with multiple data sources in one single statement. Let's again connect with the Presto CLI to `presto-1`
 
-```
+``` bash
 docker exec -ti presto-cli presto --server presto-1:8080 --catalog kafka --schema logistics
 ```
 
@@ -365,7 +365,7 @@ connection-user=demo
 connection-password=abc123!
 ```
 
-
+Now with the Postgresql connector in place, we can change the SQL statement from above to connect the `truck_position` Kafka table to the `driver` Postgresql table
 
 ``` sql
 SELECT tp.driver_id, d.first_name, d.last_name, tp.event_type, count(*) as nof
@@ -375,6 +375,8 @@ ON tp.driver_id = d.id
 WHERE event_type != 'Normal'
 GROUP BY tp.driver_id, d.first_name, d.last_name, tp.event_type;
 ```
+
+and we see the vehicle position data enriched with the driver information
 
 ```
  driver_id | first_name | last_name  |        event_type         | nof
@@ -393,6 +395,8 @@ GROUP BY tp.driver_id, d.first_name, d.last_name, tp.event_type;
         27 | NULL       | NULL       | Lane Departure            |   8
         28 | NULL       | NULL       | Unsafe following distance |   6
 ```
+
+We can also use an inline view to restrict and aggregate first on only the `truck_position` table and then join the result of the inline view to the `driver` table, which seems to be more efficient:
 
 ``` sql
 SELECT driver_id, first_name, last_name, event_type, nof

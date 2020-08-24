@@ -10,31 +10,31 @@ You can import the Zeppelin notebook with all the code using this link: `https:/
 
 Alternatively, you can also use the `pyspark` to execute the statements.
 
-```
+``` bash
 docker exec -it spark-master pyspark --packages org.apache.spark:spark-sql-kafka-0-10_2.11:2.4.5
 ```
 
 Subscribe to Kafka Topic `truck_position` and load it as a data frame:
 
-```
+``` python
 rawDf = spark.read.format("kafka").option("kafka.bootstrap.servers", "kafka-1:19092,kafka-2:19093").option("subscribe", "truck_position").load()
 ```
 
 Print Schema of data frame
 
-```
+``` python
 rawDf.printSchema
 ```
 
 we can see that the value is shown as a binary column:
 
-```
+``` bash
 <bound method DataFrame.printSchema of DataFrame[key: binary, value: binary, topic: string, partition: int, offset: bigint, timestamp: timestamp, timestampType: int]>
 ```
 
 To interpret it as JSON (the data in `truck_position` is a JSON formatted message) a custom schema is necessary:
 
-```
+``` python
 from pyspark.sql.types import *
 
 truckPositionSchema = StructType().add("timestamp", TimestampType()).add("truckId",LongType()).add("driverId", LongType()).add("routeId", LongType()).add("eventType", StringType()).add("latitude", DoubleType()).add("longitude", DoubleType()).add("correlationId", StringType()) 
@@ -42,7 +42,7 @@ truckPositionSchema = StructType().add("timestamp", TimestampType()).add("truckI
 
 Convert the JSON message into new data frame using schema defined before
 
-```
+``` python
 from pyspark.sql.functions import from_json
 
 jsonDf = rawDf.selectExpr("CAST(value AS string)")
@@ -51,19 +51,19 @@ jsonDf = jsonDf.select(from_json(jsonDf.value, truckPositionSchema).alias("json"
 
 Print schema of new data frame
 
-```
+``` python
 jsonDf.printSchema
 ```
 
 and we can now see that the data frame "knows" about the different values in the message, such as `eventType`, `latitude` and `longitude`:
 
-```
+``` bash
 <bound method DataFrame.printSchema of DataFrame[timestamp: timestamp, truckId: bigint, driverId: bigint, routeId: bigint, eventType: string, latitude: double, longitude: double, correlationId: string, eventTime: timestamp]>
 ```
 
 Let's see what the Data Frame contains using the `show` function
 
-```
+``` python
 jsonDf.show(10)
 ```
 
@@ -89,27 +89,27 @@ only showing top 10 rows
 
 Register the Data Frame as temporary table so it can be used with Spark SQL
 
-```
+``` python
 jsonDf.createOrReplaceTempView("truck_position")
 ```
 
 Use the SQL directive to work on the temporary table and show the number of rows in the table (i.e. number of messages in the Kafka topic) - the %SQL directive only works in Zeppelin, in `pyspark` you can use the `spark.sql()` function to execute the SQL statements, shown below.
 
-```
+``` sql
 %sql
 SELECT count(*) FROM truck_position
 ```
 
 Now let's see all rows where the event type is not `Normal`. Knowing SQL, such a query is easy to write:
 
-```
+``` sql
 %sql
 SELECT * FROM truck_position WHERE eventType != 'Normal'
 ```
 
 In `pyspark`, it not using Zeppelin notebook, that query can be executed and the result shown using the following statement:
 
-```
+``` python
 spark.sql ("SELECT * FROM truck_position WHERE eventType != 'Normal'").show()
 ```
 

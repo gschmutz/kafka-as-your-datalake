@@ -43,7 +43,7 @@ tail -f /var/log/cloud-init-output.log --lines 1000
 
 Using the `kafka-topics` CLI inside the `kafka-1` docker container create the different Kafka topics:
 
-```
+``` bash
 docker exec -it kafka-1 kafka-topics --zookeeper zookeeper-1:2181 --create --topic truck_position --partitions 8 --replication-factor 3
 docker exec -it kafka-1 kafka-topics --zookeeper zookeeper-1:2181 --create --topic dangerous_driving_ksql --partitions 8 --replication-factor 3
 docker exec -it kafka-1 kafka-topics --zookeeper zookeeper-1:2181 --create --topic dangerous_driving_and_driver_ksql --partitions 8 --replication-factor 3
@@ -54,13 +54,13 @@ docker exec -it kafka-1 kafka-topics --zookeeper zookeeper-1:2181 --create --top
 
 Let's create the `driver` table in Postgresql.
 
-```
+``` bash
 docker exec -ti postgresql psql -d demodb -U demo
 ```
 
 On the command prompt, create the table `driver`.
 
-```
+``` sql
 CREATE SCHEMA IF NOT EXISTS logistics_db;
 
 SET search_path TO logistics_db;
@@ -74,7 +74,7 @@ ALTER TABLE driver ADD CONSTRAINT driver_pk PRIMARY KEY (id);
 
 Let's add some initial data to the newly created table. 
 
-```
+``` sql
 INSERT INTO "driver" ("id", "first_name", "last_name", "available", "birthdate", "last_update") VALUES (10,'Diann', 'Butler', 'Y', '10-JUN-68', CURRENT_TIMESTAMP);
 INSERT INTO "driver" ("id", "first_name", "last_name", "available", "birthdate", "last_update") VALUES (11,'Micky', 'Isaacson', 'Y', '31-AUG-72' ,CURRENT_TIMESTAMP);
 INSERT INTO "driver" ("id", "first_name", "last_name", "available", "birthdate", "last_update") VALUES (12,'Laurence', 'Lindsey', 'Y', '19-MAY-78' ,CURRENT_TIMESTAMP);
@@ -105,7 +105,7 @@ INSERT INTO "driver" ("id", "first_name", "last_name", "available", "birthdate",
 
 We will use the Kafka Connect JDBC connector to move the data from the `driver` Postgresql table to `logisticsdb_driver` Kafka topic with the same name.
 
-```
+``` bash
 curl -X "POST" "$DOCKER_HOST_IP:8083/connectors" \
      -H "Content-Type: application/json" \
      -d $'{
@@ -136,7 +136,7 @@ curl -X "POST" "$DOCKER_HOST_IP:8083/connectors" \
 
 Check that all the data is successfully appended to the `logisticsdb_driver` topic:
 
-```
+``` bash
 docker exec -ti kafkacat kafkacat -b kafka-1 -t logisticsdb_driver
 ```
 
@@ -146,13 +146,13 @@ Open two terminals windows.
 
 In the 1st window, run IoT Truck simulator and produce messages to the `truck_position` Kafka topic:
 
-```
+``` bash
 docker run trivadis/iot-truck-simulator '-s' 'KAFKA' '-h' $DOCKER_HOST_IP '-p' '9092' '-f' 'JSON'
 ```
 
 In the 2nd window, start a kafkacat consumer to see the messages:
 
-```
-kafkacat -b localhost -t truck_position
+``` bash
+docker exec -ti kafkacat kafkacat -b kafka-1 -t truck_position
 ```
 

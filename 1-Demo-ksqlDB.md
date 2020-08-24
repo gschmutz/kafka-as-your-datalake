@@ -10,7 +10,7 @@ This demo will show how stream processing can be used to transform raw data (eve
 
 Let's connect to the ksqlDB shell
 
-```
+``` bash
 docker exec -it ksqldb-cli ksql http://ksqldb-server-1:8088
 ```
 
@@ -18,13 +18,13 @@ docker exec -it ksqldb-cli ksql http://ksqldb-server-1:8088
 
 First drop the stream if it already exists:
 
-```
+``` sql
 DROP STREAM IF EXISTS truck_position_raw_s;
 ```
 
 Now let's create the ksqlDB Stream
 
-```
+``` sql
 CREATE STREAM IF NOT EXISTS truck_position_raw_s 
   (timestamp VARCHAR, 
    truckId VARCHAR, 
@@ -40,7 +40,7 @@ CREATE STREAM IF NOT EXISTS truck_position_raw_s
 
 Let's see the live data by using a `SELECT` on the Stream with the `EMIT CHANGES` clause:
 
-```
+``` sql
 SELECT * FROM truck_position_raw_s 
 EMIT CHANGES;
 ```
@@ -49,13 +49,13 @@ EMIT CHANGES;
 
 First drop the stream if it already exists:
 
-```
+``` sql
 DROP STREAM IF EXISTS truck_position_refined_s;
 ```
 
 And now crate the refined ksqlDB Stream:
 
-```
+``` sql
 CREATE STREAM IF NOT EXISTS truck_position_refined_s 
   WITH (kafka_topic='truck_position_refined',
         value_format='AVRO')
@@ -66,7 +66,7 @@ EMIT CHANGES;
 
 to check that the refined topic does in fact hold avro formatted data, let's just do a normal kafkacat on the `truck_position_refined` topic
 
-```
+``` bash
 docker exec -ti kafkacat kafkacat -b kafka-1 -t truck_position_refined
 ```
 
@@ -90,7 +90,7 @@ WX�$343671958179690963
 
 we can use the `-s` and `-r` option to specify the Avro Serde and the URL of the schema registry
 
-```
+``` bash
 docker exec -ti kafkacat kafkacat -b kafka-1 -t truck_position_refined -s avro -r http://schema-registry-1:8081
 ```
 
@@ -98,7 +98,7 @@ docker exec -ti kafkacat kafkacat -b kafka-1 -t truck_position_refined -s avro -
 
 In this new stream we are only interested in the messages where the `eventType` is not normal. First let's create a SELECT statement which performs the right result, using the ksqlDB CLI:
 
-```
+``` sql
 SELECT * FROM truck_position_refined_s 
 WHERE eventType != 'Normal'
 EMIT CHANGES;
@@ -106,7 +106,7 @@ EMIT CHANGES;
 
 Now let's create a new stream with that information. 
 
-```
+``` sql
 DROP STREAM IF EXISTS problematic_driving_s;
 
 CREATE STREAM IF NOT EXISTS problematic_driving_s \
@@ -121,14 +121,14 @@ WHERE eventtype != 'Normal';
 
 We can see that the stream now only contains the messages filtered down to the relevant ones:
 
-```
+``` sql
 SELECT * FROM problematic_driving_s
 EMIT CHANGES;
 ```
 
 We can also see the same information by directly getting the data from the underlaying kafka topic `problematic_driving`:
 
-```
+``` bash
 docker exec -ti kafkacat kafkacat -b kafka-1 -t problematic_driving -s avro -r http://schema-registry-1:8081
 ```
 
@@ -136,7 +136,7 @@ docker exec -ti kafkacat kafkacat -b kafka-1 -t problematic_driving -s avro -r h
 
 First let's register the Kafka topic `logisticsdb_driver`, which we created and populated in the [Preparation](0-Preparation.md) section.
 
-```
+``` sql
 set 'commit.interval.ms'='5000';
 set 'cache.max.bytes.buffering'='10000000';
 set 'auto.offset.reset'='earliest';
@@ -155,7 +155,7 @@ CREATE TABLE IF NOT EXISTS driver_t (rowkey VARCHAR PRIMARY KEY,
 
 Now with the ksqlDB table in place, let's join it with the `problematic_driving_s` ksqlDB stream to enrich it with the driver information (first_name and last_name):
 
-```
+``` sql
 SELECT driverid, first_name, last_name, truckId, routeId ,eventType \
 FROM problematic_driving_s \
 LEFT JOIN driver_t \
@@ -168,7 +168,7 @@ We can see the enriched stream live in the CLI.
 How can we make that enriched dataset (data stream) available in a more permanent fashion? We do that by creating a new Stream based on the SELECT statement just issued. Stop the query by entering `CTRL-C` and execute the following statement:
 
 
-```
+``` sql
 DROP STREAM IF EXISTS dangerous_driving_and_driver_s;
 
 CREATE STREAM IF NOT EXISTS problematic_driving_and_driver_s \
@@ -184,6 +184,6 @@ ON CAST (problematic_driving_s.driverId AS VARCHAR) = driver_t.ROWKEY;
 
 we can use `kafkacat` to show the data stream in the newly created Kafka topic `problematic_driving_and_driver_ksql` to show the enrichment in action:
 
-```
+``` bash
 docker exec -ti kafkacat kafkacat -b kafka-1 -t problematic_driving_and_driver_ksql -s avro -r http://schema-registry-1:8081
 ```
