@@ -2,18 +2,19 @@
 
 ## Demo 2 - Batch Processing with Spark
 
-In this demo we will see how Spark can be used to access the [Kafka topic from a Batch process](https://spark.apache.org/docs/latest/structured-streaming-kafka-integration.html).
+In this demo we will see how Spark can be used to access the [Kafka topic from a Batch process](https://spark.apache.org/docs/latest/structured-streaming-kafka-integration.html). In this demo we are using the Spark Python API, it could easily be done in Scala or Java as well. 
 
 ![Alt Image Text](./images/demo-2-spark.png "Demo 2 - Spark")
 
-You can import the Zeppelin notebook from `https://raw.githubusercontent.com/gschmutz/kafka-as-your-datalake-demo/master/zeppelin/Spark%20Batch%20%26%20Apache%20Kafka.json`.
+You can import the Zeppelin notebook with all the code using this link: `https://raw.githubusercontent.com/gschmutz/kafka-as-your-datalake-demo/master/zeppelin/Spark%20Batch%20%26%20Apache%20Kafka.json`.
+
+Alternatively, you can also use the `pyspark` to execute the statements.
 
 ```
-docker exec -it spark-master spark-shell  --conf spark.hadoop.fs.s3a.endpoint=http://minio:9000 --conf spark.hadoop.fs.s3a.access.key=V42FCGRVMK24JJ8DHUYG --conf spark.hadoop.fs.s3a.secret.key=bKhWxVF3kQoLY9kFmt91l+tDrEoZjqnWXzY9Eza --conf spark.hadoop.fs.s3a.path.style.access=true --conf spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.0.0
+docker exec -it spark-master pyspark --packages org.apache.spark:spark-sql-kafka-0-10_2.11:2.4.5
 ```
 
-
-Subscribe to Kafka Topic "truck_position" and load it as a data frame:
+Subscribe to Kafka Topic `truck_position` and load it as a data frame:
 
 ```
 rawDf = spark.read.format("kafka").option("kafka.bootstrap.servers", "kafka-1:19092,kafka-2:19093").option("subscribe", "truck_position").load()
@@ -25,11 +26,13 @@ Print Schema of data frame
 rawDf.printSchema
 ```
 
+we can see that the value is shown as a binary column:
+
 ```
 <bound method DataFrame.printSchema of DataFrame[key: binary, value: binary, topic: string, partition: int, offset: bigint, timestamp: timestamp, timestampType: int]>
 ```
 
-Define a custom schema reflecting the truck_position JSON data
+To interpret it as JSON (the data in `truck_position` is a JSON formatted message) a custom schema is necessary:
 
 ```
 from pyspark.sql.types import *
@@ -37,7 +40,7 @@ from pyspark.sql.types import *
 truckPositionSchema = StructType().add("timestamp", TimestampType()).add("truckId",LongType()).add("driverId", LongType()).add("routeId", LongType()).add("eventType", StringType()).add("latitude", DoubleType()).add("longitude", DoubleType()).add("correlationId", StringType()) 
 ```
 
-Convert JSON message into new data frame using schema defined before
+Convert the JSON message into new data frame using schema defined before
 
 ```
 from pyspark.sql.functions import from_json
@@ -52,15 +55,19 @@ Print schema of new data frame
 jsonDf.printSchema
 ```
 
+and we can now see that the data frame "knows" about the different values in the message, such as `eventType`, `latitude` and `longitude`:
+
 ```
 <bound method DataFrame.printSchema of DataFrame[timestamp: timestamp, truckId: bigint, driverId: bigint, routeId: bigint, eventType: string, latitude: double, longitude: double, correlationId: string, eventTime: timestamp]>
 ```
 
-Show the first 10 rows of the data frame
+Let's see what the Data Frame contains using the `show` function
 
 ```
 jsonDf.show(10)
 ```
+
+and we can see that the Data Frame  
 
 ```
 +--------------------+-------+--------+----------+---------+--------+---------+--------------------+--------------------+
@@ -80,31 +87,33 @@ jsonDf.show(10)
 only showing top 10 rows
 ```
 
-Register data frame as temporary table so it can be used with Spark SQL
+Register the Data Frame as temporary table so it can be used with Spark SQL
 
 ```
 jsonDf.createOrReplaceTempView("truck_position")
 ```
 
-Use the SQL directive to work on the temporary table and show the number of rows in the table (i.e. number of messages in the Kafka topic)
+Use the SQL directive to work on the temporary table and show the number of rows in the table (i.e. number of messages in the Kafka topic) - the %SQL directive only works in Zeppelin, in `pyspark` you can use the `spark.sql()` function to execute the SQL statements, shown below.
 
 ```
 %sql
-SELECT count(*) from truck_position
+SELECT count(*) FROM truck_position
 ```
 
-Show all the rows where the event type is not normal
+Now let's see all rows where the event type is not `Normal`. Knowing SQL, such a query is easy to write:
 
 ```
 %sql
-SELECT count(*) from truck_position
+SELECT * FROM truck_position WHERE eventType != 'Normal'
 ```
 
+In `pyspark`, it not using Zeppelin notebook, that query can be executed and the result shown using the following statement:
+
 ```
-spark.sql ("select * from truck_position where eventType != 'Normal'").show
+spark.sql ("SELECT * FROM truck_position WHERE eventType != 'Normal'").show()
 ```
 
-you will get a result similar to the one shown below:
+and you will get a result similar to the one shown below:
 
 ```
 +--------------------+-------+--------+----------+--------------------+--------+---------+--------------------+--------------------+
