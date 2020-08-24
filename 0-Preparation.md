@@ -2,41 +2,32 @@
 
 ## Preparation
 
-### Setup platform using Docker Compose
+The platform where the demos can be run on, has been generated using the [`platys`](http://github.com/trivadispf/platys)  toolset using the [`platys-modern-data-platform`](http://github.com/trivadispf/platys-modern-data-platform) stack.
 
-```
-# Install Docker
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable edge"
-apt-get install -y docker-ce
-sudo usermod -aG docker ubuntu
+The generated artefacts are available in the `./docker` folder.
 
-# Install Docker Compose
-curl -L "https://github.com/docker/compose/releases/download/1.26.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-chmod +x /usr/local/bin/docker-compose
-ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+The prerequisites for running the platform are 
+ 
+ * Docker 
+ * Docker Compose. 
 
-# Prepare Environment Variables
-export PUBLIC_IP=$(curl ipinfo.io/ip)
-export DOCKER_HOST_IP=$(ip addr show eth0 | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
+### Start the platform using Docker Compose
 
-# needed for elasticsearch
-sudo sysctl -w vm.max_map_count=262144   
+First create the following two environment variables, which export the Public IP address (if a cloud environment) and the Docker Engine (Docker Host)  IP address:
 
-# Get the project
-cd /home/ubuntu 
-git clone https://github.com/gschmutz/kafka-as-your-datalake-demo.git
-chown -R ubuntu:ubuntu kafka-as-your-datalake-demo
-cd kafka-as-your-datalake-demo/platys
-
-# Startup Environment
-sudo -E docker-compose up -d
+``` bash
+export DOCKER_HOST_IP=<docker-host-ip>
+export PUBLIC_IP=<public-host-ip>
 ```
 
-Click **Connect using SSH** to open the console and enter the following command to watch the log file of the init script.
+It is very important that these two are set, otherwise the platform will not run properly.
 
-```
-tail -f /var/log/cloud-init-output.log --lines 1000
+Now navigate into the `docker` folder and start `docker-compose`.
+
+``` bash
+cd ./docker
+
+docker-compose up -d
 ```
 
 ### Create Kafka Topics
