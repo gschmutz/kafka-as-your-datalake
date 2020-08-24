@@ -2,9 +2,13 @@
 
 ## Demo 3 - Batch Query with Presto
 
-In this demo we will show how Presto can be used to query a Kafka topic in a "batch" manner. By that you basically treat Kafka as a "table" and can perform queries on all the data stored in the topic. 
+In this demo we will show how Presto can be used to query a Kafka topic in a "batch" manner. With that you basically treat Kafka as a "table" and can perform queries on all the data stored in the topic. 
 
 ![Alt Image Text](./images/demo-3-presto.png "Demo 3 - Presto")
+
+Currently the Presto Kafka connector does not support filter pushdowns, but there is an [active pull request #4805](https://github.com/prestosql/presto/pull/4805) implementing that. 
+
+Since the recording of the session, support for Apache Avro has been added, but not yet with Schema Registry support, but there is another [active pull request #4805](https://github.com/prestosql/presto/pull/2499) which will add that.
 
 ### Configure the Kafka connector
 
