@@ -67,10 +67,12 @@
 
       # ===== Spark ========
       SPARK_enable: true
+      SPARK_version: 2.4.5-hadoop2.8
       # "hive" or "in-memory"
       SPARK_catalog: in-memory
       SPARK_workers: 2
-      SPARK_jars_packages: ''
+      SPARK_jars_packages: 'org.apache.spark:spark-sql-kafka-0-10_2.11:2.4.5'
+      SPARK_jars_excludes: ''
       SPARK_jars_ivySettings: ''
       SPARK_driver_extraJavaOptions: ''
       SPARK_executor_extraJavaOptions: ''
@@ -141,6 +143,7 @@
 
       # ===== Zeppelin ========
       ZEPPELIN_enable: true
+      ZEPPELIN_version: 0.8.2-spark2.4-hadoop2.8
       ZEPPELIN_volume_map_data: false
 
       # ===== Jupyter ========
