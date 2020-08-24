@@ -689,8 +689,8 @@ Presto supports many SQL functions, such as LAG and LEAD as well as LAST_VALUE. 
 SELECT * 
 FROM logisticsdb_driver 
 WHERE (last_update) IN (SELECT LAST_VALUE(last_update) OVER (PARTITION BY kafka_key 
-											ORDER BY last_update 
-											RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS last_update 
+								ORDER BY last_update 
+								RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS last_update 
 							FROM logisticsdb_driver);
 ```
 
@@ -707,8 +707,8 @@ LEFT JOIN (
 	SELECT * 
 	FROM logisticsdb_driver 
 	WHERE (last_update) IN (SELECT LAST_VALUE(last_update) OVER (PARTITION BY id 
-												ORDER BY last_update 
-												RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS last_update 
+									ORDER BY last_update 
+									RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS last_update 
 								FROM logisticsdb_driver)	) d						
 ON tp.driver_id = d.id
 ```
