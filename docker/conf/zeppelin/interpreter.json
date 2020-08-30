@@ -923,6 +923,11 @@
       "name": "spark",
       "group": "spark",
       "properties": {
+        "spark.driver.port": {
+          "name": "spark.driver.port",
+          "value": "5050",
+          "type": "number"
+        },
         "zeppelin.spark.concurrentSQL": {
           "name": "zeppelin.spark.concurrentSQL",
           "value": false,
@@ -993,9 +998,29 @@
           "value": false,
           "type": "checkbox"
         },
+        "spark.hadoop.fs.s3a.secret.key": {
+          "name": "spark.hadoop.fs.s3a.secret.key",
+          "value": "bKhWxVF3kQoLY9kFmt91l+tDrEoZjqnWXzY9Eza",
+          "type": "string"
+        },
         "spark.app.name": {
           "name": "spark.app.name",
           "value": "Zeppelin",
+          "type": "string"
+        },
+        "spark.ui.port": {
+          "name": "spark.ui.port",
+          "value": "4050",
+          "type": "number"
+        },
+        "spark.hadoop.fs.s3a.access.key": {
+          "name": "spark.hadoop.fs.s3a.access.key",
+          "value": "V42FCGRVMK24JJ8DHUYG",
+          "type": "string"
+        },
+        "spark.driver.host": {
+          "name": "spark.driver.host",
+          "value": "172.16.252.12",
           "type": "string"
         },
         "zeppelin.spark.maxResult": {
@@ -1047,6 +1072,21 @@
           "name": "zeppelin.R.render.options",
           "value": "out.format \u003d \u0027html\u0027, comment \u003d NA, echo \u003d FALSE, results \u003d \u0027asis\u0027, message \u003d F, warning \u003d F, fig.retina \u003d 2",
           "type": "textarea"
+        },
+        "spark.executor.extraJavaOptions": {
+          "name": "spark.executor.extraJavaOptions",
+          "value": "",
+          "type": "string"
+        },
+        "spark.blockManager.port": {
+          "name": "spark.blockManager.port",
+          "value": "6060",
+          "type": "number"
+        },
+        "spark.driver.extraJavaOptions": {
+          "name": "spark.driver.extraJavaOptions",
+          "value": "",
+          "type": "string"
         }
       },
       "status": "READY",

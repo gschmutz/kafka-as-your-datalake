@@ -1,5 +1,5 @@
 # =====================================================
-# Platform: kafka-as-a-dl
+# Platform: default
 # =====================================================
 version: '3.0'
 # enforce some dependencies
@@ -149,8 +149,8 @@ services:
       - 8083:8083
     environment:
       CONNECT_BOOTSTRAP_SERVERS: kafka-1:19092
-      CONNECT_REST_PORT: 8083
       CONNECT_REST_ADVERTISED_HOST_NAME: kafka-connect-1
+      CONNECT_REST_PORT: 8083
       CONNECT_GROUP_ID: kafka-connect
       CONNECT_CONFIG_STORAGE_TOPIC: _connect-configs
       CONNECT_OFFSET_STORAGE_TOPIC: _connect-offsets
@@ -165,14 +165,13 @@ services:
       CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry-1:8081
       CONNECT_INTERNAL_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
       CONNECT_INTERNAL_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
-#      CONNECT_ZOOKEEPER_CONNECT: 'zookeeper-1:2181'
       CONNECT_LOG4J_ROOT_LOGLEVEL: INFO
       CONNECT_LOG4J_LOGGERS: org.apache.kafka.connect.runtime.rest=WARN,org.reflections=ERROR
       CONNECT_LOG4J_APPENDER_STDOUT_LAYOUT_CONVERSIONPATTERN: '[%d] %p %X{connector.context}%m (%c:%L)%n'
+      CONNECT_PLUGIN_PATH: /usr/share/java,/etc/kafka-connect/addl-plugins
       CLASSPATH: /usr/share/java/monitoring-interceptors/monitoring-interceptors-4.0.0.jar
       AWS_ACCESS_KEY_ID: V42FCGRVMK24JJ8DHUYG
       AWS_SECRET_ACCESS_KEY: bKhWxVF3kQoLY9kFmt91l+tDrEoZjqnWXzY9Eza
-      CONNECT_PLUGIN_PATH: /usr/share/java,/etc/kafka-connect/addl-plugins
     volumes:
       - ./data-transfer:/data-transfer
       - ./plugins/kafka-connect:/etc/kafka-connect/addl-plugins
@@ -205,8 +204,8 @@ services:
       - 8084:8084
     environment:
       CONNECT_BOOTSTRAP_SERVERS: kafka-1:19092
-      CONNECT_REST_PORT: 8084
       CONNECT_REST_ADVERTISED_HOST_NAME: kafka-connect-2
+      CONNECT_REST_PORT: 8084
       CONNECT_GROUP_ID: kafka-connect
       CONNECT_CONFIG_STORAGE_TOPIC: _connect-configs
       CONNECT_OFFSET_STORAGE_TOPIC: _connect-offsets
@@ -221,47 +220,49 @@ services:
       CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry-1:8081
       CONNECT_INTERNAL_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
       CONNECT_INTERNAL_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
-#      CONNECT_ZOOKEEPER_CONNECT: 'zookeeper-1:2181'
       CONNECT_LOG4J_ROOT_LOGLEVEL: INFO
       CONNECT_LOG4J_LOGGERS: org.apache.kafka.connect.runtime.rest=WARN,org.reflections=ERROR
       CONNECT_LOG4J_APPENDER_STDOUT_LAYOUT_CONVERSIONPATTERN: '[%d] %p %X{connector.context}%m (%c:%L)%n'
+      CONNECT_PLUGIN_PATH: /usr/share/java,/etc/kafka-connect/addl-plugins
       CLASSPATH: /usr/share/java/monitoring-interceptors/monitoring-interceptors-4.0.0.jar
       AWS_ACCESS_KEY_ID: V42FCGRVMK24JJ8DHUYG
       AWS_SECRET_ACCESS_KEY: bKhWxVF3kQoLY9kFmt91l+tDrEoZjqnWXzY9Eza
-      CONNECT_PLUGIN_PATH: /usr/share/java,/etc/kafka-connect/addl-plugins
     volumes:
       - ./data-transfer:/data-transfer
       - ./plugins/kafka-connect:/etc/kafka-connect/addl-plugins
     restart: unless-stopped
   #  ================================== ksqlDB ========================================== #}
   ksqldb-server-1:
-    image: confluentinc/ksqldb-server:0.9.0
+    image: confluentinc/ksqldb-server:0.11.0
     hostname: ksqldb-server-1
     container_name: ksqldb-server-1
     labels:
       com.mdps.service.restapi.url: http://${PUBLIC_IP}:8088
     ports:
       - 8088:8088
+      - 1095:1095
     depends_on:
       - kafka-1
       - schema-registry-1
     environment:
       KSQL_CONFIG_DIR: /etc/ksql
       KSQL_LOG4J_OPTS: -Dlog4j.configuration=file:/etc/ksql/log4j-rolling.properties
-      KSQL_BOOTSTRAP_SERVERS: kafka-1:19092
       KSQL_HOST_NAME: ksqldb-server-1
       KSQL_APPLICATION_ID: kafka-demo
+      KSQL_KSQL_SERVICE_ID: kafka-demo
       KSQL_LISTENERS: http://0.0.0.0:8088
+      KSQL_BOOTSTRAP_SERVERS: kafka-1:19092
       KSQL_KSQL_SCHEMA_REGISTRY_URL: http://schema-registry-1:8081
       KSQL_KSQL_LOGGING_PROCESSING_STREAM_AUTO_CREATE: 'true'
       KSQL_KSQL_LOGGING_PROCESSING_TOPIC_AUTO_CREATE: 'true'
-      KSQL_KSQL_SERVICE_ID: kafka-demo
+      KSQL_KSQL_QUERY_PULL_METRICS_ENABLED: 'true'
+      KSQL_JMX_OPTS: -Djava.rmi.server.hostname=localhost -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=1095 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.rmi.port=1095
     volumes:
       - ./data-transfer:/data-transfer
       - ./plugins/ksql:/etc/ksql/ext
     restart: unless-stopped
   ksqldb-cli:
-    image: confluentinc/ksqldb-cli:0.9.0
+    image: confluentinc/ksqldb-cli:0.11.0
     container_name: ksqldb-cli
     hostname: ksqldb-cli
     depends_on:
@@ -270,6 +271,20 @@ services:
       - ./data-transfer:/data-transfer
     entrypoint: /bin/sh
     tty: true
+  #  ================================== Kafkacat  ========================================== #}
+  kafkacat:
+    image: edenhill/kafkacat:1.6.0
+    container_name: kafkacat
+    hostname: kafkacat
+    volumes:
+      - ./data-transfer:/data-transfer
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        apk add jq;
+        while [ 1 -eq 1 ];do sleep 60;done
+    restart: unless-stopped
   #  ================================== Schema Registry UI ========================================== #}
   schema-registry-ui:
     image: landoop/schema-registry-ui:latest
@@ -346,7 +361,9 @@ services:
       CORE_CONF_fs_s3a_path_style_access: 'true'
       SPARK_PUBLIC_DNS: ${PUBLIC_IP}
       INIT_DAEMON_STEP: setup_spark
-      SPARK_DEFAULTS_CONF_spark_jars_packages:
+      SPARK_DEFAULTS_CONF_spark_jars_repositories:
+      SPARK_DEFAULTS_CONF_spark_jars_packages: org.apache.spark:spark-sql-kafka-0-10_2.11:2.4.5
+      SPARK_DEFAULTS_CONF_spark_jars_excludes:
       SPARK_DEFAULTS_CONF_spark_jars:
       SPARK_DEFAULTS_CONF_spark_jars_ivySettings:
       SPARK_DEFAULTS_CONF_spark_hadoop_fs_s3a_impl: org.apache.hadoop.fs.s3a.S3AFileSystem
@@ -381,7 +398,9 @@ services:
       SPARK_PUBLIC_DNS: ${PUBLIC_IP}
       CORE_CONF_fs_s3a_endpoint: http://minio:9000
       CORE_CONF_fs_s3a_path_style_access: 'true'
-      SPARK_DEFAULTS_CONF_spark_jars_packages:
+      SPARK_DEFAULTS_CONF_spark_jars_repositories:
+      SPARK_DEFAULTS_CONF_spark_jars_packages: org.apache.spark:spark-sql-kafka-0-10_2.11:2.4.5
+      SPARK_DEFAULTS_CONF_spark_jars_excludes:
       SPARK_DEFAULTS_CONF_spark_jars:
       SPARK_DEFAULTS_CONF_spark_jars_ivySettings:
       SPARK_DEFAULTS_CONF_spark_hadoop_fs_s3a_impl: org.apache.hadoop.fs.s3a.S3AFileSystem
@@ -415,7 +434,9 @@ services:
       SPARK_PUBLIC_DNS: ${PUBLIC_IP}
       CORE_CONF_fs_s3a_endpoint: http://minio:9000
       CORE_CONF_fs_s3a_path_style_access: 'true'
-      SPARK_DEFAULTS_CONF_spark_jars_packages:
+      SPARK_DEFAULTS_CONF_spark_jars_repositories:
+      SPARK_DEFAULTS_CONF_spark_jars_packages: org.apache.spark:spark-sql-kafka-0-10_2.11:2.4.5
+      SPARK_DEFAULTS_CONF_spark_jars_excludes:
       SPARK_DEFAULTS_CONF_spark_jars:
       SPARK_DEFAULTS_CONF_spark_jars_ivySettings:
       SPARK_DEFAULTS_CONF_spark_hadoop_fs_s3a_impl: org.apache.hadoop.fs.s3a.S3AFileSystem
@@ -445,7 +466,9 @@ services:
     ports:
       - 28117:18080
     environment:
-      SPARK_DEFAULTS_CONF_spark_jars_packages:
+      SPARK_DEFAULTS_CONF_spark_jars_repositories:
+      SPARK_DEFAULTS_CONF_spark_jars_packages: org.apache.spark:spark-sql-kafka-0-10_2.11:2.4.5
+      SPARK_DEFAULTS_CONF_spark_jars_excludes:
       SPARK_DEFAULTS_CONF_spark_jars_ivySettings:
       SPARK_DEFAULTS_CONF_spark_hadoop_fs_s3a_impl: org.apache.hadoop.fs.s3a.S3AFileSystem
       SPARK_DEFAULTS_CONF_spark_hadoop_fs_s3a_endpoint: http://minio:9000
@@ -486,7 +509,7 @@ services:
     restart: unless-stopped
   #  ================================== StreamSets DataCollector ========================================== #}
   streamsets-1:
-    image: trivadis/streamsets-kafka-hadoop-aws:latest
+    image: trivadis/streamsets-kafka-hadoop-aws:3.17.0
     container_name: streamsets-1
     hostname: streamsets-1
     labels:
@@ -504,8 +527,8 @@ services:
       SDC_CONF_PIPELINE_MAX_RUNNERS_COUNT: 50
     volumes:
       - ./data-transfer:/data-transfer
-#      - ./streamsets-extras/streamsets-libs-extras/streamsets-datacollector-jdbc-lib/postgresql-42.2.6.jar:/opt/streamsets-datacollector-latest/streamsets-libs-extras/streamsets-datacollector-jdbc-lib/lib/postgresql-42.2.6.jar:Z
-#      - ./streamsets-extras/libs-common-lib:/opt/streamsets-datacollector-latest/libs-common-lib:Z
+#      - ./streamsets-extras/streamsets-libs-extras/streamsets-datacollector-jdbc-lib/postgresql-42.2.6.jar:/opt/streamsets-datacollector-3.17.0/streamsets-libs-extras/streamsets-datacollector-jdbc-lib/lib/postgresql-42.2.6.jar:Z
+#      - ./streamsets-extras/libs-common-lib:/opt/streamsets-datacollector-3.17.0/libs-common-lib:Z
 #      - ./streamsets-extras/user-libs:/opt/streamsets-datacollector-user-libs:Z
     ulimits:
       nofile:
@@ -530,7 +553,9 @@ services:
     environment:
       CORE_CONF_fs_s3a_endpoint: http://minio:9000
       CORE_CONF_fs_s3a_path_style_access: 'true'
-      SPARK_DEFAULTS_CONF_spark_jars_packages:
+      SPARK_DEFAULTS_CONF_spark_jars_repositories:
+      SPARK_DEFAULTS_CONF_spark_jars_packages: org.apache.spark:spark-sql-kafka-0-10_2.11:2.4.5
+      SPARK_DEFAULTS_CONF_spark_jars_excludes:
       SPARK_DEFAULTS_CONF_spark_jars:
       SPARK_DEFAULTS_CONF_spark_jars_ivySettings:
       SPARK_DEFAULTS_CONF_spark_hadoop_fs_s3a_impl: org.apache.hadoop.fs.s3a.S3AFileSystem
@@ -567,9 +592,23 @@ services:
       - ./conf/zeppelin/interpreter.json:/opt/zeppelin/conf/interpreter.json
       - ./conf/zeppelin/interpreter-setting.json:/opt/zeppelin/interpreter/spark/interpreter-setting.json
     restart: unless-stopped
+  #  ================================== PostgreSQL ========================================== #}
+  postgresql:
+    image: postgres:13
+    container_name: postgresql
+    hostname: postgresql
+    environment:
+      - POSTGRES_PASSWORD=abc123!
+      - POSTGRES_USER=demo
+      - POSTGRES_DB=demodb
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - ./data-transfer:/data-transfer
+      - ./init/postgresql:/docker-entrypoint-initdb.d/
+    restart: unless-stopped
   #  ================================== Presto ========================================== #}
   presto-1:
-    image: starburstdata/presto:latest
+    image: starburstdata/presto:340-e
     hostname: presto-1
     container_name: presto-1
     labels:
@@ -578,14 +617,23 @@ services:
     ports:
       - 28081:8080
     volumes:
-      - ./conf/presto/minio.properties:/usr/lib/presto/default/etc/catalog/minio.properties
-      - ./conf/presto/kafka.properties:/usr/lib/presto/default/etc/catalog/kafka.properties
-      - ./conf/presto/kafka-hive.properties:/usr/lib/presto/default/etc/catalog/kafka-hive.properties
-      - ./scripts/presto/truck_position.json:/usr/lib/presto/default/etc/kafka/truck_position.json
+      - ./data-transfer:/data-transfer
+      - ./conf/presto/single/config.properties:/usr/lib/presto/etc/config.properties
+      - ./conf/presto/cluster/node.properties:/usr/lib/presto/etc/node.properties
+      - ./conf/presto/catalog/minio.properties:/usr/lib/presto/etc/catalog/minio.properties
+      - ./conf/presto/catalog/postgresql.properties:/usr/lib/presto/etc/catalog/postgresql.properties
+    restart: unless-stopped
+  presto-cli:
+    image: trivadis/prestosql-cli:latest
+    hostname: presto-cli
+    container_name: presto-cli
+    volumes:
+      - ./data-transfer:/data-transfer
+    tty: true
     restart: unless-stopped
   #  ================================== Presto ========================================== #}
   dremio-1:
-    image: dremio/dremio-oss:latest
+    image: dremio/dremio-oss:4.7
     container_name: dremio-1
     hostname: dremio-1
     labels:
@@ -600,7 +648,7 @@ services:
     restart: unless-stopped
   #  ================================== Presto ========================================== #}
   drill-1:
-    image: smizy/apache-drill:latest
+    image: smizy/apache-drill:1.16.0-alpine
     container_name: drill-1
     hostname: drill-1
     labels:
@@ -632,4 +680,18 @@ services:
     volumes:
       - ./data-transfer:/data-transfer
     command: server /data
+    restart: unless-stopped
+  #  ================================== Awscli ========================================== #}
+  awscli:
+    image: xueshanf/awscli:latest
+    container_name: awscli
+    hostname: awscli
+    environment:
+      AWS_ACCESS_KEY_ID: V42FCGRVMK24JJ8DHUYG
+      AWS_SECRET_ACCESS_KEY: bKhWxVF3kQoLY9kFmt91l+tDrEoZjqnWXzY9Eza
+    volumes:
+      - ./data-transfer:/data-transfer
+      - ./conf/s3cfg:/root/.s3cfg
+#      - './minio/config:/root/.minio'
+    command: tail -f /dev/null
     restart: unless-stopped
