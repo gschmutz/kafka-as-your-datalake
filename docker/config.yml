@@ -264,6 +264,16 @@
       #
       KAFKA_MAGIC_enable: false
       #
+      # ===== kpow ========
+      #
+      KPOW_enable: true
+      KPOW_use_external_license_info: true
+      KPOW_license_id:
+      KPOW_license_code: 
+      KPOW_licensee:
+      KPOW_license_expiry:
+      KPOW_license_signature:  
+      #
       # ===== kafka webview ========
       #
       KAFKA_WEBVIEW_enable: false

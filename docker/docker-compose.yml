@@ -370,6 +370,36 @@ services:
     volumes:
       - ./data-transfer:/data-transfer
     restart: unless-stopped
+  #  ================================== kpow ========================================== #
+  kpow:
+    image: operatr/kpow:latest
+    container_name: kpow
+    hostname: kpow
+    labels:
+      com.platys.name: kpow
+      com.platys.webui.title: kpow UI
+      com.platys.webui.url: http://${PUBLIC_IP}:28283
+    ports:
+      - 28283:3000
+    env_file:
+      - ./licenses/kpow/kpow-license.env
+    environment:
+      PORT: 3000
+      ENVIRONMENT_NAME: platys-stack
+      BOOTSTRAP: kafka-1:19092,kafka-2:19093,kafka-3:19094
+      ALLOW_TOPIC_CREATE: true
+      ALLOW_TOPIC_DELETE: true
+      ALLOW_TOPIC_EDIT: true
+      ALLOW_TOPIC_INSPECT: true
+      ALLOW_TOPIC_PRODUCE: true
+      ALLOW_GROUP_EDIT: true
+      CONNECT_REST_URL: http://kafka-connect-1:8083
+      ALLOW_CONNECT_EDIT: true
+      SCHEMA_REGISTRY_URL: http://${PUBLIC_IP}:8081
+      ALLOW_SCHEMA_EDIT: true
+    volumes:
+      - ./data-transfer:/data-transfer
+    restart: unless-stopped
   #  ================================== Kafka Connector Board ========================================== #
   kafka-connector-board:
     image: tranglolab/kafka-connector-board:latest
