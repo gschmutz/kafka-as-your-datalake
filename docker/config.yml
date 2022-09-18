@@ -1115,7 +1115,7 @@
       #
       #=====  MinIO Object Storage ========
       #
-      MINIO_enable: false
+      MINIO_enable: true
       MINIO_volume_map_data: false
       MINIO_datacenters: 1
       # "single" or "cluster"
