@@ -210,69 +210,6 @@ services:
         #
         sleep infinity
     restart: unless-stopped
-  kafka-connect-2:
-    image: confluentinc/cp-kafka-connect:7.1.2
-    container_name: kafka-connect-2
-    hostname: kafka-connect-2
-    labels:
-      com.platys.name: kafka-connect
-      com.platys.restapi.title: Kafka Connect REST API
-      com.platys.restapi.url: http://${PUBLIC_IP}:8084
-    ports:
-      - 8084:8084
-    environment:
-      CONNECT_BOOTSTRAP_SERVERS: kafka-1:19092,kafka-2:19093,kafka-3:19094
-      CONNECT_LISTENERS: http://0.0.0.0:8084
-      CONNECT_REST_ADVERTISED_HOST_NAME: kafka-connect-2
-      CONNECT_REST_ADVERTISED_PORT: 8084
-      CONNECT_GROUP_ID: kafka-connect-cluster
-      CONNECT_CONFIG_STORAGE_TOPIC: _connect-configs
-      CONNECT_OFFSET_STORAGE_TOPIC: _connect-offsets
-      CONNECT_STATUS_STORAGE_TOPIC: _connect-status
-      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 3
-      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 3
-      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 3
-      CONNECT_OFFSET_FLUSH_INTERVAL_MS: 10000
-      CONNECT_KEY_CONVERTER: io.confluent.connect.avro.AvroConverter
-      CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry-1:8081
-      CONNECT_VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
-      CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry-1:8081
-      CONNECT_INTERNAL_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
-      CONNECT_INTERNAL_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
-      CONNECT_LOG4J_ROOT_LOGLEVEL: INFO
-      CONNECT_LOG4J_LOGGERS: org.apache.kafka.connect.runtime.rest=WARN,org.reflections=ERROR
-      CONNECT_LOG4J_APPENDER_STDOUT_LAYOUT_CONVERSIONPATTERN: '[%d] %p %X{connector.context}%m (%c:%L)%n'
-      CONNECT_PLUGIN_PATH: /usr/share/java,/etc/kafka-connect/addl-plugins,/etc/kafka-connect/cflthub-plugins
-      CONNECT_CONNECTOR_CLIENT_CONFIG_OVERRIDE_POLICY: All
-      #CLASSPATH: /usr/share/java/monitoring-interceptors/monitoring-interceptors-4.0.0.jar
-      AWS_ACCESS_KEY_ID: V42FCGRVMK24JJ8DHUYG
-      AWS_SECRET_ACCESS_KEY: bKhWxVF3kQoLY9kFmt91l+tDrEoZjqnWXzY9Eza
-      # External secrets config
-      # See https://docs.confluent.io/current/connect/security.html#externalizing-secrets
-      CONNECT_CONFIG_PROVIDERS: file
-      CONNECT_CONFIG_PROVIDERS_FILE_CLASS: org.apache.kafka.common.config.provider.FileConfigProvider
-    volumes:
-      - ./data-transfer:/data-transfer
-      - ./plugins/kafka-connect/connectors:/etc/kafka-connect/addl-plugins
-      - ./plugins/kafka-connect/jars:/etc/kafka-connect/jars
-      - ./plugins/opentelemetry/agents:/otel
-    command:
-      # In the command section, $ are replaced with $$ to avoid the error 'Invalid interpolation format for "command" option'
-      - bash
-      - -c
-      - |
-        echo "Installing Connectors"
-        mkdir -p /etc/kafka-connect/cflthub-plugins
-        for i in $$(echo "None" | sed "s/,/ /g")
-        do
-          confluent-hub install --no-prompt --component-dir /etc/kafka-connect/cflthub-plugins --verbose "$$i"
-        done
-        #
-        echo "Launching Kafka Connect worker"
-        /etc/confluent/docker/run &
-        #
-        sleep infinity
-    restart: unless-stopped
   #  ================================== ksqlDB ========================================== #
   ksqldb-server-1:
     image: confluentinc/ksqldb-server:0.27.1
@@ -302,59 +239,6 @@ services:
       KSQL_APPLICATION_ID: ksqldb-cluster
       KSQL_KSQL_SERVICE_ID: ksqldb-cluster
       KSQL_HOST_NAME: ksqldb-server-1
-      KSQL_LISTENERS: http://0.0.0.0:8088
-      KSQL_BOOTSTRAP_SERVERS: kafka-1:19092,kafka-2:19093,kafka-3:19094
-      KSQL_CACHE_MAX_BYTES_BUFFERING: 0
-      KSQL_RESPONSE_HTTP_HEADERS_CONFIG: ''
-      KSQL_KSQL_CONNECT_URL: http://kafka-connect-1:8083
-      KSQL_KSQL_SCHEMA_REGISTRY_URL: http://schema-registry-1:8081
-      KSQL_KSQL_INTERNAL_TOPIC_REPLICAS: 1
-      KSQL_KSQL_SINK_REPLICAS: 1
-      KSQL_KSQL_STREAMS_REPLICATION_FACTOR: 1
-      KSQL_KSQL_QUERY_PULL_METRICS_ENABLED: 'true'
-      KSQL_KSQL_HIDDEN_TOPICS: ^_.*,default_ksql_processing_log
-      KSQL_KSQL_SUPPRESS_ENABLED: 'False'
-      KSQL_KSQL_SUPPRESS_BUFFER_SIZE_BYTES: '-1'
-      KSQL_KSQL_QUERY_PULL_TABLE_SCAN_ENABLED: 'False'
-      KSQL_CONFIG_DIR: /etc/ksqldb
-      KSQL_KSQL_EXTENSION_DIR: /etc/ksqldb/ext/
-      KSQL_JMX_OPTS: -Djava.rmi.server.hostname=localhost -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=1095 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.rmi.port=1095
-    volumes:
-      - ./data-transfer:/data-transfer
-      - ./plugins/ksqldb:/etc/ksqldb/ext
-#      - ./conf/ksqldb/etc/log4j.properties:/etc/ksqldb/log4j.properties
-      - ./plugins/kafka-connect/connectors:/etc/kafka-connect/addl-plugins
-      - ./plugins/kafka-connect/jars:/etc/kafka-connect/jars
-      - ./plugins/opentelemetry/agents:/otel
-    restart: unless-stopped
-  ksqldb-server-2:
-    image: confluentinc/ksqldb-server:0.27.1
-    hostname: ksqldb-server-2
-    container_name: ksqldb-server-2
-    labels:
-      com.platys.name: ksqldb
-      com.platys.restapi.title: ksqlDB Server REST API
-      com.platys.restapi.url: http://${PUBLIC_IP}:8089
-    ports:
-      - 8089:8088
-      - 1096:1095
-    environment:
-      #KSQL_LOG4J_OPTS: "-Dlog4j.configuration=file:/etc/ksqldb/log4j-rolling.properties"
-      KSQL_LOG4J_LOGGERS: org.apache.kafka.connect.runtime.rest=WARN,org.reflections=ERROR
-      KSQL_LOG4J_PROCESSING_LOG_BROKERLIST: kafka-1:19092,kafka-2:19093,kafka-3:19094
-      KSQL_LOG4J_PROCESSING_LOG_TOPIC: ksql_processing_log
-      KSQL_KSQL_LOGGING_PROCESSING_TOPIC_NAME: ksql_processing_log
-      KSQL_KSQL_LOGGING_PROCESSING_TOPIC_REPLICATION_FACTOR: 1
-      KSQL_KSQL_LOGGING_PROCESSING_ROWS_INCLUDE: 'true'
-      KSQL_KSQL_LOGGING_PROCESSING_STREAM_AUTO_CREATE: 'true'
-      KSQL_KSQL_LOGGING_PROCESSING_TOPIC_AUTO_CREATE: 'true'
-      # For Demo purposes: improve resource utilization and avoid timeouts
-      KSQL_KSQL_STREAMS_NUM_STREAM_THREADS: 1
-      KSQL_PRODUCER_ENABLE_IDEMPOTENCE: 'true'
-      KSQL_KSQL_PERSISTENCE_DEFAULT_FORMAT_KEY: KAFKA
-      KSQL_APPLICATION_ID: ksqldb-cluster
-      KSQL_KSQL_SERVICE_ID: ksqldb-cluster
-      KSQL_HOST_NAME: ksqldb-server-2
       KSQL_LISTENERS: http://0.0.0.0:8088
       KSQL_BOOTSTRAP_SERVERS: kafka-1:19092,kafka-2:19093,kafka-3:19094
       KSQL_CACHE_MAX_BYTES_BUFFERING: 0
@@ -480,8 +364,6 @@ services:
               connect:
                 - name: "connect-1"
                   url: "http://kafka-connect-1:8083"
-                - name: "connect-2"
-                  url: "http://kafka-connect-2:8084"
     volumes:
       - ./data-transfer:/data-transfer
     restart: unless-stopped
@@ -837,41 +719,6 @@ services:
     volumes:
       - ./data-transfer:/data-transfer
     tty: true
-    restart: unless-stopped
-  #  ================================== Presto ========================================== #
-  dremio-1:
-    image: dremio/dremio-oss:20.1
-    container_name: dremio-1
-    hostname: dremio-1
-    labels:
-      com.platys.name: dremio
-      com.platys.webui.title: Dremio UI
-      com.platys.webui.url: http://${PUBLIC_IP}:9047
-    ports:
-      - 9047:9047
-      - 31010:31010
-      - 45678:45678
-    volumes:
-      - ./data-transfer:/data-transfer
-    restart: unless-stopped
-  #  ================================== Presto ========================================== #
-  drill-1:
-    image: smizy/apache-drill:1.16.0-alpine
-    container_name: drill-1
-    hostname: drill-1
-    labels:
-      com.platys.name: drill
-      com.platys.webui.title: Drill UI
-      com.platys.webui.url: http://${PUBLIC_IP}:8047
-    ports:
-      - 8047:8047
-    environment:
-      - SERVICE_8047_NAME=drillbit
-      - DRILL_HEAP=512M
-      - DRILL_MAX_DIRECT_MEMORY=1G
-      - DRILL_ZOOKEEPER_QUORUM=zookeeper-1:2181
-    volumes:
-      - ./data-transfer:/data-transfer
     restart: unless-stopped
   #  ================================== Minio ========================================== #
   minio-1:
