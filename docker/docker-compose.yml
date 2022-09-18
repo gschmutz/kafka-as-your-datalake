@@ -343,6 +343,21 @@ services:
       - |
         while [ 1 -eq 1 ];do sleep 60;done
     restart: unless-stopped
+  #  ================================== kcat (used to be kafkacat)  ========================================== #
+  kaskade:
+    image: sauljabin/kaskade:latest
+    container_name: kaskade
+    hostname: kaskade
+    labels:
+      com.platys.name: kaskade
+    volumes:
+      - ./data-transfer:/data-transfer
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        while [ 1 -eq 1 ];do sleep 60;done
+    restart: unless-stopped
   #  ================================== Apache Kafka HQ (AKHQ) ========================================== #
   akhq:
     image: tchiotludo/akhq:latest

@@ -200,7 +200,7 @@
       #
       # ===== kaskade ========
       #
-      KASKADE_enable: false
+      KASKADE_enable: true
       #
       # ===== kafkactl ========
       #
