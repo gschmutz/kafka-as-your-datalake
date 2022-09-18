@@ -1,28 +1,43 @@
 -- create metadata aspect table
-create table metadata_aspect (
-  urn                           varchar(500) not null,
-  aspect                        varchar(200) not null,
-  version                       bigint(20) not null,
-  metadata                      longtext not null,
-  createdon                     datetime(6) not null,
-  createdby                     varchar(255) not null,
-  createdfor                    varchar(255),
-  constraint pk_metadata_aspect primary key (urn,aspect,version)
-);
+CREATE TABLE metadata_aspect_v2 (
+  urn                           VARCHAR(500) NOT NULL,
+  aspect                        VARCHAR(200) NOT NULL,
+  version                       bigint(20) NOT NULL,
+  metadata                      longtext NOT NULL,
+  systemmetadata                longtext,
+  createdon                     datetime(6) NOT NULL,
+  createdby                     VARCHAR(255) NOT NULL,
+  createdfor                    VARCHAR(255),
+  CONSTRAINT pk_metadata_aspect_v2 PRIMARY KEY (urn,aspect,version)
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
 
--- create default records for datahub user
-insert into metadata_aspect (urn, aspect, version, metadata, createdon, createdby) values(
+INSERT INTO metadata_aspect_v2 (urn, aspect, version, metadata, createdon, createdby) VALUES(
   'urn:li:corpuser:datahub',
-  'com.linkedin.identity.CorpUserInfo',
+  'corpUserInfo',
   0,
   '{"displayName":"Data Hub","active":true,"fullName":"Data Hub","email":"datahub@linkedin.com"}',
   now(),
-  'urn:li:principal:datahub'
+  'urn:li:corpuser:__datahub_system'
 ), (
   'urn:li:corpuser:datahub',
-  'com.linkedin.identity.CorpUserEditableInfo',
+  'corpUserEditableInfo',
   0,
-  '{"skills":[],"teams":[],"pictureLink":"https://raw.githubusercontent.com/linkedin/datahub/master/datahub-web/packages/data-portal/public/assets/images/default_avatar.png"}',
+  '{"skills":[],"teams":[],"pictureLink":"https://raw.githubusercontent.com/linkedin/datahub/master/datahub-web-react/src/images/default_avatar.png"}',
   now(),
-  'urn:li:principal:datahub'
+  'urn:li:corpuser:__datahub_system'
+);
+
+-- create metadata index table
+CREATE TABLE metadata_index (
+ `id` BIGINT NOT NULL AUTO_INCREMENT,
+ `urn` VARCHAR(200) NOT NULL,
+ `aspect` VARCHAR(150) NOT NULL,
+ `path` VARCHAR(150) NOT NULL,
+ `longVal` BIGINT,
+ `stringVal` VARCHAR(200),
+ `doubleVal` DOUBLE,
+ CONSTRAINT id_pk PRIMARY KEY (id),
+ INDEX longIndex (`urn`,`aspect`,`path`,`longVal`),
+ INDEX stringIndex (`urn`,`aspect`,`path`,`stringVal`),
+ INDEX doubleIndex (`urn`,`aspect`,`path`,`doubleVal`)
 );
