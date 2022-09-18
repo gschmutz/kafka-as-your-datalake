@@ -11,6 +11,34 @@
       use_timezone: ''
       # the name of the repository to use for private images, which are not on docker hub (currently only Oracle images)
       private_docker_repository_name: 'trivadis'
+      # the UID to use when using the "user" property in a service to override the user inside the container
+      uid: '1000'
+
+      data_centers: 'dc1,dc2'
+      data_center_to_use: 0
+
+      copy_cookbook_data_folder: true
+      
+      # ========================================================================
+      # External Services
+      # ========================================================================
+
+      external:
+        KAFKA_enable: false
+        KAFKA_bootstrap_servers:
+        KAFKA_security_protocol: 
+        KAFKA_sasl_mechanism: 
+
+        SCHEMA_REGISTRY_enable: false
+        SCHEMA_REGISTRY_url:
+
+        S3_enable: false
+        S3_endpoint:
+        S3_default_region:
+        S3_path_style_access: false
+
+        ADLS_enable: false
+        ADLS_storage_account:      
       
       PROVISIONING_DATA_enable: false
       
