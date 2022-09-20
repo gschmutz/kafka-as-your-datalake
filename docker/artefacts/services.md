@@ -4,22 +4,19 @@
 |-------------- |------|------------
 |[akhq](./documentation/services/akhq )|<http://localhost:28107>
 |[awscli](./documentation/services/awscli )|
-|[dremio-1](./documentation/services/dremio )|<http://localhost:9047>
-|[drill-1](./documentation/services/drill )|<http://localhost:8047>
 |[hive-metastore](./documentation/services/hive-metastore )|
 |[hive-metastore-db](./documentation/services/hive-metastore )|
 |[kafka-1](./documentation/services/kafka )|
 |[kafka-2](./documentation/services/kafka )|
 |[kafka-3](./documentation/services/kafka )|
 |[kafka-connect-1](./documentation/services/kafka-connect )|| <http://localhost:8083>
-|[kafka-connect-2](./documentation/services/kafka-connect )|| <http://localhost:8084>
-|[kafka-connector-board](./documentation/services/kafka-connector-board )|<http://localhost:28282>
 |[kcat](./documentation/services/kcat )|
 |[ksqldb-cli](./documentation/services/ksqldb-cli )|
 |[ksqldb-server-1](./documentation/services/ksqldb )|| <http://localhost:8088>
-|[ksqldb-server-2](./documentation/services/ksqldb )|| <http://localhost:8089>
 |[markdown-renderer](./documentation/services/markdown-renderer )|
 |[markdown-viewer](./documentation/services/markdown-viewer )|<http://localhost:80>
+|[minio-1](./documentation/services/minio )|<http://localhost:9000>
+|[minio-mc](./documentation/services/minio )|
 |[postgresql](./documentation/services/postgresql )|
 |[schema-registry-1](./documentation/services/schema-registry )|| <http://localhost:8081>
 |[schema-registry-ui](./documentation/services/schema-registry-ui )|<http://localhost:28102>
