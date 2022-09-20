@@ -760,6 +760,7 @@ services:
     ports:
       - 28082:8080
     environment:
+      KAFKA_TABLE_NAMES: truck_position
       POSTGRESQL_DATABASE: postgres
       POSTGRESQL_USER: postgres
       POSTGRESQL_PASSWORD: abc123!
@@ -769,6 +770,8 @@ services:
       - ./data-transfer:/data-transfer
       - ./conf/trino/single/config.properties:/etc/trino/config.properties
       - ./conf/trino/single/node.properties:/etc/trino/node.properties
+      - ./conf/trino/catalog/kafka.properties:/etc/trino/catalog/kafka.properties
+      - ./conf/trino/kafka/:/etc/trino/kafka/
       - ./conf/trino/catalog/postgresql.properties:/etc/trino/catalog/postgresql.properties
       - ./security/starburstdata/password-authenticator.properties:/etc/starburst/password-authenticator.properties
       - ./security/starburstdata/password.db:/etc/starburst/password.db

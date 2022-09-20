@@ -94,7 +94,7 @@
       # ===== Kafka Connect ========
       #
       KAFKA_CONNECT_enable: true
-      KAFKA_CONNECT_nodes: 2
+      KAFKA_CONNECT_nodes: 1
       KAFKA_CONNECT_connectors: 'confluentinc/kafka-connect-jdbc:10.5.2'
       KAFKA_CONNECT_config_providers: 'file'
       KAFKA_CONNECT_config_providers_classes: 'org.apache.kafka.common.config.provider.FileConfigProvider'
@@ -105,7 +105,7 @@
       KAFKA_KSQLDB_enable: true
       # either 'cp' or 'oss'
       KAFKA_KSQLDB_edition: 'oss'
-      KAFKA_KSQLDB_nodes: 2
+      KAFKA_KSQLDB_nodes: 1
       KAFKA_KSQLDB_internal_replication_factor: 1
       KAFKA_KSQLDB_suppress_enabled: false
       KAFKA_KSQLDB_suppress_buffer_size_bytes: -1
@@ -198,6 +198,10 @@
       #
       KCAT_enable: true
       #
+      # ===== kaskade ========
+      #
+      KASKADE_enable: false
+      #
       # ===== kafkactl ========
       #
       KAFKACTL_enable: false
@@ -264,13 +268,23 @@
       #
       KAFKA_MAGIC_enable: false
       #
+      # ===== kpow ========
+      #
+      KPOW_enable: false
+      KPOW_use_external_license_info: true
+      KPOW_license_id:
+      KPOW_license_code: 
+      KPOW_licensee:
+      KPOW_license_expiry:
+      KPOW_license_signature:  
+      #
       # ===== kafka webview ========
       #
       KAFKA_WEBVIEW_enable: false
       #
       # ===== kafka connector board ========
       #
-      KAFKA_CONNECTOR_BOARD_enable: true
+      KAFKA_CONNECTOR_BOARD_enable: false
       #
       # ===== Streams Explorer UI ========
       #
@@ -1015,11 +1029,11 @@
       #
       # ===== Dremio ========
       #
-      DREMIO_enable: true
+      DREMIO_enable: false
       #
       # ===== Apache Drill ========
       #
-      DRILL_enable: true
+      DRILL_enable: false
       #
       # ===== Hasura ========
       #
@@ -1115,7 +1129,7 @@
       #
       #=====  MinIO Object Storage ========
       #
-      MINIO_enable: false
+      MINIO_enable: true
       MINIO_volume_map_data: false
       MINIO_datacenters: 1
       # "single" or "cluster"
