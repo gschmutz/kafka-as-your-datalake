@@ -64,10 +64,10 @@ FROM truck_position_raw_s
 EMIT CHANGES;
 ```
 
-to check that the refined topic does in fact hold avro formatted data, let's just do a normal kafkacat on the `truck_position_refined` topic
+to check that the refined topic does in fact hold avro formatted data, let's just do a normal kcat on the `truck_position_refined` topic
 
 ``` bash
-docker exec -ti kafkacat kafkacat -b kafka-1 -t truck_position_refined
+docker exec -ti kcat kcat -b kafka-1:19092 -t truck_position_refined
 ```
 
 we can see that it is avro 
@@ -91,10 +91,10 @@ WX�$343671958179690963
 we can use the `-s` and `-r` option to specify the Avro Serde and the URL of the schema registry
 
 ``` bash
-docker exec -ti kafkacat kafkacat -b kafka-1 -t truck_position_refined -s avro -r http://schema-registry-1:8081
+docker exec -ti kcat kcat -b kafka-1:19092 -t truck_position_refined -s avro -r http://schema-registry-1:8081
 ```
 
-### Create a new "usage-optimized" stream with the data filered
+### Create a new "usage-optimized" stream with the data filtered
 
 In this new stream we are only interested in the messages where the `eventType` is not normal. First let's create a SELECT statement which performs the right result, using the ksqlDB CLI:
 
@@ -129,8 +129,38 @@ EMIT CHANGES;
 We can also see the same information by directly getting the data from the underlaying kafka topic `problematic_driving`:
 
 ``` bash
-docker exec -ti kafkacat kafkacat -b kafka-1 -t problematic_driving -s avro -r http://schema-registry-1:8081
+docker exec -ti kcat kcat -b kafka-1:19092 -t problematic_driving -s avro -r http://schema-registry-1:8081
 ```
+
+### Pull query on Stream to get "historical" data
+
+You can select the persisted data by using a Pull-query (without the emit changes):
+
+```sql
+SELECT * 
+FROM truck_position_refined_s 
+WHERE eventType != 'Normal';
+```
+
+notice that this query will come to an end (as the data in this case is bounded)
+
+```
+.....
+Query Completed
+Query terminated
+ksql>
+```
+
+you can also use the `LIMIT` clause to limit the amount of data returned:
+
+```sql
+SELECT * 
+FROM truck_position_refined_s 
+WHERE eventType != 'Normal'
+LIMIT 10;
+```
+
+However you cannot do any aggregation operations if it is a pull query.
 
 ### Create Join with Driver information, available in Kafka topic
 
@@ -167,7 +197,6 @@ We can see the enriched stream live in the CLI.
 
 How can we make that enriched dataset (data stream) available in a more permanent fashion? We do that by creating a new Stream based on the SELECT statement just issued. Stop the query by entering `CTRL-C` and execute the following statement:
 
-
 ``` sql
 DROP STREAM IF EXISTS dangerous_driving_and_driver_s;
 
@@ -182,8 +211,8 @@ LEFT JOIN driver_t \
 ON CAST (problematic_driving_s.driverId AS VARCHAR) = driver_t.ROWKEY;
 ```
 
-we can use `kafkacat` to show the data stream in the newly created Kafka topic `problematic_driving_and_driver_ksql` to show the enrichment in action:
+we can use `kcat` to show the data stream in the newly created Kafka topic `problematic_driving_and_driver_ksql` to show the enrichment in action:
 
 ``` bash
-docker exec -ti kafkacat kafkacat -b kafka-1 -t problematic_driving_and_driver_ksql -s avro -r http://schema-registry-1:8081
+docker exec -ti kcat kcat -b kafka-1:19092 -t problematic_driving_and_driver_ksql -s avro -r http://schema-registry-1:8081
 ```

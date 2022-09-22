@@ -11,7 +11,7 @@ You can import the Zeppelin notebook with all the code using this link: `https:/
 Alternatively, you can also use the `pyspark` to execute the statements.
 
 ``` bash
-docker exec -it spark-master pyspark --packages org.apache.spark:spark-sql-kafka-0-10_2.11:2.4.5
+docker exec -it spark-master pyspark --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.3
 ```
 
 Subscribe to Kafka Topic `truck_position` and load it as a data frame:

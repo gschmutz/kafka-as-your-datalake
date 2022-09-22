@@ -1,71 +1,27 @@
 # Kafka as your Data Lake - is it feasible?
 
-## Demo 3 - Batch Query with Presto
+## Demo 3 - Batch Query with Trino
 
-In this demo we will show how Presto can be used to query a Kafka topic in a "batch" manner. With that you basically treat Kafka as a "table" and can perform queries on all the data stored in the topic. 
+In this demo we will show how Trino can be used to query a Kafka topic in a "batch" manner. With that you basically treat Kafka as a "table" and can perform queries on all the data stored in the topic. 
 
-![Alt Image Text](./images/demo-3-presto.png "Demo 3 - Presto")
+![Alt Image Text](./images/demo-3-trino.png "Demo 3 - Trino")
 
-Currently the Presto Kafka connector does not support filter pushdowns, but there is an [active pull request #4805](https://github.com/prestosql/presto/pull/4805) implementing that. 
-
-Since the recording of the session, support for Apache Avro has been added, but not yet with Schema Registry support, but there is another [active pull request #4805](https://github.com/prestosql/presto/pull/2499) which will add that.
 
 ### Configure the Kafka connector
 
-First lets configure the [Kafka connector](https://prestodb.io/docs/current/connector/kafka.html) and make the Kafka topics known to Kafka.
 
-In order to not change the `docker-compose.yml` (it is generated) directly, we can use the `cdocker-compose.override.yml` file to overwrite settings of the various services. 
 
-Add the following lines to `docker-compose.override.yml`:
 
-``` yaml
-version: '3.0'
-services:
-  presto-1:
-    volumes:
-      - ./conf/presto/catalog/kafka.properties:/usr/lib/presto/etc/catalog/kafka.properties
-      - ./conf/presto/catlog/kafka-hive.properties:/usr/lib/presto/etc/catalog/kafka-hive.properties
-      - ./scripts/presto/truck_position.json:/usr/lib/presto/default/etc/kafka/truck_position.json
-      - ./plugins/presto/presto-kafka-340.jar:/usr/lib/presto/plugin/kafka/presto-kafka-340.jar
-```
 
-if using Presto DB, it would be
+### Let's use Trino to query the data from the Kafka topic
 
-``` yaml
-version: '3.0'
-services:
-  presto-1:
-    volumes:
-      - ./conf/presto/kafka.properties:/opt/presto-server/etc/catalog/kafka.properties
-      - ./conf/presto/kafka-hive.properties:/opt/presto-server/etc/catalog/kafka-hive.properties
-      - ./scripts/presto/truck_position.json:/opt/presto-server/etc/kafka/tabledesc/truck_position.json
-```
-
-Create the `kafka.properties` in folder `./conf/presto/catalog`. We can see that we register `truck_position` as a table and assign it to the `logistics` schema. 
-
-``` properties
-kafka.nodes=kafka-1:19092
-kafka.table-names=truck_position
-kafka.default-schema=logistics
-kafka.hide-internal-columns=false
-kafka.table-description-dir=/usr/lib/presto/default/etc/kafka
-```
-
-Restart the `presto-1` service so that the configuration changes are picked up by Presto.
+Next let's query the data from Trino. Connect to the Trino CLI using
 
 ``` bash
-docker restart presto-1
+docker exec -ti trino-cli trino --server trino-1:8080 --catalog kafka --schema logistics
 ```
 
-### Let's use Presto to query the data from the Kafka topic
-
-Next let's query the data from Presto. Connect to the Presto CLI using
-
-``` bash
-docker exec -ti presto-cli presto --server presto-1:8080 --catalog kafka --schema logistics
-```
-
-on the `presto:logistics>` prompt use the `show tables` command to display the registered tables:
+on the `trino:logistics>` prompt use the `show tables` command to display the registered tables:
 
 ``` sql
 show tables;
@@ -74,7 +30,7 @@ show tables;
 and you should get exactly one row back, the `truck_position` table:
 
 ```
-presto:logistics> show tables
+trino:logistics> show tables
                -> ;
      Table      
 ----------------
@@ -91,7 +47,7 @@ SELECT * FROM truck_position;
 We can see that we get some data back, but the message is shown as just one column `_message`, and not split up into one column per field in the message. The reason for that is that the connector does not yet know about how to interpret the message.  
 
 ```
-presto:logistics> SELECT * FROM truck_position;
+trino:logistics> SELECT * FROM truck_position;
  _partition_id | _partition_offset | _message_corrupt |                                                                                            _message
 ---------------+-------------------+------------------+---------------------------------------------------------------------------------------------------------------------------------------------
              2 |                 0 | false            | {"timestamp":1597770414534,"truckId":58,"driverId":32,"routeId":1325712174,"eventType":"Normal","correlationId":"-2599424926733256171","lati
@@ -107,7 +63,7 @@ presto:logistics> SELECT * FROM truck_position;
              2 |                10 | false            | {"timestamp":1597770448101,"truckId":58,"driverId":32,"routeId":1325712174,"eventType":"Normal","correlationId":"-2599424926733256171","lati
 ```
 
-One way to split the value of the `_message` column up is by using the `json_extract` Presto SQL function:
+One way to split the value of the `_message` column up is by using the `json_extract` Trino SQL function:
 
 ``` sql
 SELECT json_extract(_message, '$.truckId') as truck_id
@@ -118,14 +74,14 @@ SELECT json_extract(_message, '$.truckId') as truck_id
 FROM truck_position;
 ```
 
-Unfortunately the Presto Kafka connector does not support creating views, so every access of the table would have to deal with this. 
+Unfortunately the Trino Kafka connector does not support creating views, so every access of the table would have to deal with this. 
 
 But there is another way to do the mapping in a more static fashion. 
 
 
 ### Using a table definition to map the topic to a table
 
-We can create a table definition file, which consists of a JSON definition for a table. Create a file `truck_position.json` in the folder `./scripts/presto/` and add the following content:
+We can create a table definition file, which consists of a JSON definition for a table. Create a file `truck_position.json` in the folder `./conf/trino/kafka` and add the following content:
 
 ``` json
 {
@@ -193,11 +149,11 @@ We can create a table definition file, which consists of a JSON definition for a
 }
 ```
 
-In the `kafka.properties` configuration file, there is one setting `kafka.table-description-dir=/usr/lib/presto/default/etc/kafka` which specifies where Presto can find the table definition file and in the `docker-compose.override.yml` the local file defined above is mapped into the `presto-1` container.
+In the `kafka.properties` configuration file, there is one setting `kafka.table-description-dir=/usr/lib/trino/default/etc/kafka` which specifies where Trino can find the table definition file and in the `docker-compose.yml` the local file defined above is mapped into the `trino-1` container.
 
-Recreate the `presto-1` container using `docker-compose up -d`.
+Restart the `trino-1` container using `docker restart trino-1`.
 
-Now we can use the `SELECT` statement to prove that the mapping is working. From the Presto command line, execute:
+Now we can use the `SELECT` statement to prove that the mapping is working. From the Trino command line, execute:
 
 ``` sql
 SELECT * FROM truck_position;
@@ -206,7 +162,7 @@ SELECT * FROM truck_position;
 we can see that there is no longer a `_message` column but instead one column for each mapping of the table definition file. Much more usable of course!
 
 ```
-presto:logistics> SELECT * FROM truck_position;
+trino:logistics> SELECT * FROM truck_position;
  kafka_key |   timestamp   | truck_id | driver_id |  route_id  |        event_type         | latitude | longitude | _partition_id | _partition_offset | _message_corrupt |
 -----------+---------------+----------+-----------+------------+---------------------------+----------+-----------+---------------+-------------------+------------------+--------------------------
  81        | 1597770414480 |       81 |      NULL | 1927624662 | Normal                    |    41.62 |    -93.58 |             1 |                 0 | false            | {"timestamp":159777041448
@@ -229,7 +185,7 @@ DESCRIBE truck_position;
 We can see "our" own columns from the definition and some other internal columns all starting with `_`. They represent some technical properties of a Kafka message, such as the partition or the offset of the message.
 
 ```
-presto:logistics> describe truck_position;
+trino:logistics> describe truck_position;
       Column       |     Type     | Extra |                         Comment
 -------------------+--------------+-------+----------------------------------------------------------
  kafka_key         | varchar      |       |
@@ -280,7 +236,7 @@ It will of course do a full topic scan, as there are no indexes on Kafka (except
  92        | 1598124986356 |       92 |        16 |  987179512 | Unsafe tail distance      |     40.7 |    -89.52 |             3 |               766 | false            | {"timestamp":159812498635
 ```
  
-Knowing that we can also do more complex analytics using all the capabilities of the SQL language built into Presto and available to the Kafka connector as well. 
+Knowing that we can also do more complex analytics using all the capabilities of the SQL language built into Trino and available to the Kafka connector as well. 
 
 ``` sql
 SELECT driver_id, event_type, count(*) as nof
@@ -321,14 +277,18 @@ We get the count of unnormal event types per driver:
         18 | Unsafe following distance |   5
 ```
 
-In such a query it would be interesting to know the name of the driver. But this information it is not available in the Kafka topic. Knowing SQL, we could use a Join Operation to join data from the `truck_position` table/topic to the `driver` table in the Postgresql database (we have created in the preperation step above). This is what we will do in the next section.
+In such a query it would be interesting to know the name of the driver. But this information it is not available in this Kafka topic. 
+
+Knowing SQL, we could use a Join Operation to join data from the `truck_position` table/topic to the `driver` table in the Postgresql database (we have created in the preperation step above). 
+
+This is what we will do in the next section.
 
 ### Joining with Driver table in Postgresql
 
-Presto allows to work with multiple data sources in one single statement. Let's again connect with the Presto CLI to `presto-1`
+Presto allows to work with multiple data sources in one single statement. Let's again connect with the Trino CLI to `trino-1`
 
 ``` bash
-docker exec -ti presto-cli presto --server presto-1:8080 --catalog kafka --schema logistics
+docker exec -ti trino-cli trino --server trino-1:8080 --catalog kafka --schema logistics
 ```
 
 and use the following SQL statement to access the `driver` table in the `logistics_db` schema over the Presto `postgresql` connector.
@@ -356,16 +316,16 @@ we can see the data retrieved from the Postgresql table:
 (11 rows)
 ```
 
-This works, because there is a `postgresql.properties` file, which defines the Postgresql connector:
+This works, because there is a `postgresql.properties` file in the folder `conf/trino/catalog`, which defines the Postgresql connector:
 
 ``` properties
 connector.name=postgresql
-connection-url=jdbc:postgresql://postgresql:5432/demodb
-connection-user=demo
-connection-password=abc123!
+connection-url=jdbc:postgresql://postgresql:5432/${ENV:POSTGRESQL_DATABASE}
+connection-user=${ENV:POSTGRESQL_USER}
+connection-password=${ENV:POSTGRESQL_PASSWORD}
 ```
 
-Now with the Postgresql connector in place, we can change the SQL statement from above to connect the `truck_position` Kafka table to the `driver` Postgresql table
+Now with the Postgresql connector in place, we can enhance the SQL statement from above to connect the `truck_position` Kafka table to the `driver` Postgresql table
 
 ``` sql
 SELECT tp.driver_id, d.first_name, d.last_name, tp.event_type, count(*) as nof
@@ -411,7 +371,7 @@ ON tp.driver_id = d.id
 
 ### Joining with Driver topic
 
-Add the `logisticsdb_driver` topic to the property `kafka.table-names` in the `kafka.properties` file, so that it will be available in Presto as a table.
+Add the `logisticsdb_driver` topic to the property `kafka.table-names` in the `kafka.properties` file, so that it will be available in Trino as a table.
 
 ``` properties
 kafka.nodes=kafka-1:19092
@@ -421,12 +381,12 @@ kafka.hide-internal-columns=false
 kafka.table-description-dir=/usr/lib/presto/default/etc/kafka
 ```
 
-Now restart the `presto-1` container using `docker restart presto-1`.
+Now restart the `trino-1` container using `docker restart trino-1`.
 
-Connect to the Presto CLI
+Connect to the Trino CLI
 
 ``` bash
-docker exec -ti presto-cli presto --server presto-1:8080 --catalog kafka --schema logistics
+docker exec -ti trino-cli trino --server trino-1:8080 --catalog kafka --schema logistics
 ```
 
 and show the tables available
@@ -485,7 +445,7 @@ and we can see that each driver is avaialbe as a JSON record:
 
 We could again use the `json_extract` function to split the properties into separate columns or use another table definition file. 
 
-Here is the table definition file for mapping the data of the `logisticsdb_driver` topic to individual columns. Create a new file `logisticsdb_driver.json` in the folder `./scripts/presto/`
+Here is the table definition file for mapping the data of the `logisticsdb_driver` topic to individual columns. Create a new file `logisticsdb_driver.json` in the folder `./scripts/trino/`
 
 
 ``` json
@@ -542,13 +502,13 @@ Here is the table definition file for mapping the data of the `logisticsdb_drive
 }
 ```
 
-and add an additional mapping to the `docker-compse.override.yml` to map the table definition file into the `presto-1` container:
+and add an additional mapping to the `docker-compse.override.yml` to map the table definition file into the `trino-1` container:
 
 ```
-      - ./scripts/presto/truck_position.json:/usr/lib/presto/default/etc/kafka/truck_position.json
+      - ./scripts/trino/truck_position.json:/usr/lib/trino/default/etc/kafka/truck_position.json
 ```
 
-Recreate the `presto-1` container using `docker-compose up -d`.
+Recreate the `trino-1` container using `docker-compose up -d`.
 
 If you now do a describe on the table, you should see the effects of the mapping:
 
@@ -641,10 +601,10 @@ docker@ubuntu:~$ docker exec -ti kafkacat kafkacat -b kafka-1 -t logisticsdb_dri
 {"id":21,"first_name":"Lila","last_name":"Page","available":"N","birthdate":2651,"last_update":1598191373828}
 ```
 
-What does that mean for our Presto table? Let's see the result of a SELECT where `id` is `21`.
+What does that mean for our Trino table? Let's see the result of a SELECT where `id` is `21`.
 
 ```
-presto:logistics> SELECT *
+trino:logistics> SELECT *
                -> FROM logisticsdb_driver
                -> WHERE id = 21;
                ->
@@ -686,8 +646,8 @@ we can see that this cause duplicates, due to the two rows returned for the `log
         21 | Lila       | Page      | Unsafe tail distance      |   4
 ```        
 
-How can we avoid that? We have simulate the behaviour of log compaction in Presto, i.e. we should only return the newest message for each `kafka_key`. 
-Presto supports many SQL functions, such as LAG and LEAD as well as LAST_VALUE. Using LAST_VALUE we return the newest `last_update` value for each key and these records we return.
+How can we avoid that? We have simulate the behaviour of log compaction in Trino, i.e. we should only return the newest message for each `kafka_key`. 
+Trino supports many SQL functions, such as LAG and LEAD as well as LAST_VALUE. Using LAST_VALUE we return the newest `last_update` value for each key and these records we return.
 
 ``` sql
 SELECT * 
