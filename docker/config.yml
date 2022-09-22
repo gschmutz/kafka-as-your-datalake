@@ -334,7 +334,7 @@
       SPARK_worker_memory:
       SPARK_worker_opts: '-Dspark.worker.cleanup.enabled=true'
       SPARK_jars_repositories: ''
-      SPARK_jars_packages: ''
+      SPARK_jars_packages: 'org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.3'
       SPARK_jars_excludes: ''
       SPARK_jars: ''
       SPARK_jars_ivySettings: ''
@@ -1006,7 +1006,11 @@
       TRINO_hive_storage_format: ORC
       TRINO_hive_compression_codec: GZIP
       TRINO_kafka_table_names: 'truck_position'
+      TRINO_kafka_default_schema: 'logistics'
       TRINO_event_listener: ''
+      TRINO_postgresql_database: 'demodb'
+      TRINO_postgresql_user: 'demo'
+      TRINO_postgresql_password: 'abc123!'      
       TRINO_oracle_user: ''
       TRINO_oracle_password: ''
       TRINO_sqlserver_database: ''

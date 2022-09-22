@@ -1,0 +1,63 @@
+{
+    "tableName": "truck_position",
+    "schemaName": "logistics",
+    "topicName": "truck_position",
+    "key": {
+        "dataFormat": "raw",
+        "fields": [
+            {
+                "name": "kafka_key",
+                "dataFormat": "BYTE",
+                "type": "VARCHAR",
+                "hidden": "false"
+            }        
+    ]
+    },
+    "message": {
+        "dataFormat": "json",
+        "fields": [
+            {
+                "name": "timestamp",
+                "mapping": "timestamp",
+                "type": "BIGINT",
+                "comment": "Time of the tracking message in real life"
+            },
+            {
+                "name": "truck_id",
+                "mapping": "truckId",
+                "type": "BIGINT",
+                "comment": "ID of the truck"
+            },
+            {
+                "name": "driver_id",
+                "mapping": "driverId",
+                "type": "BIGINT",
+                "comment": "ID of the driver"
+            },
+            {
+                "name": "route_id",
+                "mapping": "routeId",
+                "type": "BIGINT",
+                "comment": "ID of the route the truck is driving on."
+            },
+            {
+                "name": "event_type",
+                "mapping": "eventType",
+                "type": "VARCHAR",
+                "comment": "Driving behaviour, where Normal signals normal behaviour"
+            },
+            {
+                "name": "latitude",
+                "mapping": "latitude",
+                "type": "DOUBLE",
+                "comment": "Latitude part of the geo coordinate"
+            },
+            {
+                "name": "longitude",
+                "mapping": "longitude",
+                "type": "DOUBLE",
+                "comment": "Longitude part of the geo coordinate"
+            }       
+    ]
+    }
+}

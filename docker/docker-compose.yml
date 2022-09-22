@@ -401,7 +401,7 @@ services:
       INIT_DAEMON_STEP: setup_spark
       MASTER: spark://spark-master:7077
       SPARK_DEFAULTS_CONF_spark_jars_repositories:
-      SPARK_DEFAULTS_CONF_spark_jars_packages:
+      SPARK_DEFAULTS_CONF_spark_jars_packages: org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.3
       SPARK_DEFAULTS_CONF_spark_jars_excludes:
       SPARK_DEFAULTS_CONF_spark_jars:
       SPARK_DEFAULTS_CONF_spark_jars_ivySettings:
@@ -444,7 +444,7 @@ services:
       SPARK_DEFAULTS_CONF_spark_hadoop_fs_s3a_endpoint: http://minio-1:9000
       SPARK_DEFAULTS_CONF_spark_hadoop_fs_s3a_path_style_access: 'true'
       SPARK_DEFAULTS_CONF_spark_jars_repositories:
-      SPARK_DEFAULTS_CONF_spark_jars_packages:
+      SPARK_DEFAULTS_CONF_spark_jars_packages: org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.3
       SPARK_DEFAULTS_CONF_spark_jars_excludes:
       SPARK_DEFAULTS_CONF_spark_jars:
       SPARK_DEFAULTS_CONF_spark_jars_ivySettings:
@@ -487,7 +487,7 @@ services:
       SPARK_DEFAULTS_CONF_spark_hadoop_fs_s3a_endpoint: http://minio-1:9000
       SPARK_DEFAULTS_CONF_spark_hadoop_fs_s3a_path_style_access: 'true'
       SPARK_DEFAULTS_CONF_spark_jars_repositories:
-      SPARK_DEFAULTS_CONF_spark_jars_packages:
+      SPARK_DEFAULTS_CONF_spark_jars_packages: org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.3
       SPARK_DEFAULTS_CONF_spark_jars_excludes:
       SPARK_DEFAULTS_CONF_spark_jars:
       SPARK_DEFAULTS_CONF_spark_jars_ivySettings:
@@ -613,7 +613,7 @@ services:
       AWS_ENDPOINT: http://minio-1:9000
       AWS_DEFAULT_REGION: us-east-1
       SPARK_DEFAULTS_CONF_spark_jars_repositories:
-      SPARK_DEFAULTS_CONF_spark_jars_packages:
+      SPARK_DEFAULTS_CONF_spark_jars_packages: org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.3
       SPARK_DEFAULTS_CONF_spark_jars_excludes:
       SPARK_DEFAULTS_CONF_spark_jars:
       SPARK_DEFAULTS_CONF_spark_jars_ivySettings:
@@ -686,9 +686,10 @@ services:
       HIVE_STORAGE_FORMAT: ORC
       HIVE_COMPRESSION_CODEC: GZIP
       KAFKA_TABLE_NAMES: truck_position
+      KAFKA_DEFAULT_SCHEMA: logistics
       KAFKA_TABLE_DESCRIPTOR_DIR: /etc/trino/kafka/
-      POSTGRESQL_DATABASE: postgres
-      POSTGRESQL_USER: postgres
+      POSTGRESQL_DATABASE: demodb
+      POSTGRESQL_USER: demo
       POSTGRESQL_PASSWORD: abc123!
       # this is only generated to keep the structure valid if no other env variables are present
       IGNORE: ignore
