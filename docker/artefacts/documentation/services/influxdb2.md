@@ -13,4 +13,4 @@ platys gen
 
 ## How to use it?
 
-Navigate to <http://dataplatform:19999> and login with user `influx` and password `abc123abc123!`. 
+Navigate to <http://192.168.205.2:19999> and login with user `influx` and password `abc123abc123!`. 

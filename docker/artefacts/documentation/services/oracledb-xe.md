@@ -13,9 +13,9 @@ platys gen
 
 ## How to use it?
 
-Navigate to <http://dataplatform:28152>
+Navigate to <http://192.168.205.2:28152>
 
 ### Connect through JDBC
 
-* **JDBC Url:**  	`jdbc:oracle:thin:@dataplatform:1522/XEPDB1`
+* **JDBC Url:**  	`jdbc:oracle:thin:@192.168.205.2:1522/XEPDB1`
 * **JDBC Driver Class Name:** 	`oracle.jdbc.driver.OracleDriver`

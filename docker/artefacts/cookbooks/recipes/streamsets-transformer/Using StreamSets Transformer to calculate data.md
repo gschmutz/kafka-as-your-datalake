@@ -17,7 +17,7 @@ Now generate and start the data platform.
 
 ## StreamSets Transformer
 
-Navigate to <http://dataplatform:19630>
+Navigate to <http://192.168.205.2:19630>
 
 Add an **S3** origin
  
