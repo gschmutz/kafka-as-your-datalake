@@ -1,8 +1,6 @@
 # Kafka as your Data Lake - is it feasible?
 
-This project describes the setup and execution of the demo for the Kafka Summit 2020 presentation [Kafka as your Data Lake - is it feasible?](https://www.slideshare.net/gschmutz/kafka-as-your-data-lake-is-it-feasible). 
-
-![Alt Image Text](./images/kafka-as-your-datalake.png "Kafka as your Data Lake")
+This project describes the setup and execution of the demo for the DOAG 2022 presentation [Kafka as your Data Lake - is it feasible?](https://www.slideshare.net/gschmutz/kafka-as-your-data-lake-is-it-feasible).
 
 The demos are all based on a containerised platform which can easily be provisioned using Docker Compose. 
 
